@@ -43,9 +43,6 @@ $ bun --version
 ```bash
 # Install dependencies
 bun install
-
-# Build the project
-bun run build
 ```
 
 ### 4. Configure Claude Desktop
@@ -59,12 +56,12 @@ Copy the configuration to your Claude Desktop config file:
 
 **macOS:**
 ```bash
-~/Library/Application Support/Claude/claude_desktop_config.json
+$ code ~/Library/Application Support/Claude/claude_desktop_config.json
 ```
 
 **Windows:**
 ```bash
-%APPDATA%\Claude\claude_desktop_config.json
+$ code %APPDATA%\Claude\claude_desktop_config.json
 ```
 
 ## Configuration
