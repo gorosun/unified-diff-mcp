@@ -1,29 +1,61 @@
 {
   "name": "unified-diff-mcp",
   "version": "1.0.0",
-  "description": "MCP server for visualizing unified diffs with diff2html",
+  "description": "MCP server for visualizing unified diffs with diff2html - Beautiful HTML/PNG diff generation for Claude Desktop",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "bin": {
+    "unified-diff-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "examples/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "bun build src/index.ts --outfile dist/index.js --target node",
+    "build": "/Users/gorosun/.bun/bin/bun build src/index.ts --outfile dist/index.js --target node --minify",
     "build:node": "tsc",
-    "dev": "bun --watch src/index.ts",
+    "dev": "/Users/gorosun/.bun/bin/bun --watch src/index.ts",
     "start": "node dist/index.js",
-    "start:bun": "bun dist/index.js",
-    "start:dev": "bun src/index.ts",
-    "test": "bun test-sample.js",
-    "test:sample": "bun test-sample.js || /Users/gorosun/.bun/bin/bun test-sample.js",
+    "start:bun": "/Users/gorosun/.bun/bin/bun dist/index.js",
+    "start:dev": "/Users/gorosun/.bun/bin/bun src/index.ts",
+    "__prepublishOnly": "/Users/gorosun/.bun/bin/bun run build",
+    "test": "/Users/gorosun/.bun/bin/bun test-sample.js",
+    "test:sample": "/Users/gorosun/.bun/bin/bun test-sample.js || /Users/gorosun/.bun/bin/bun test-sample.js",
     "test:build": "npm run build && npm run start"
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "diff",
     "visualization",
     "unified-diff",
-    "diff2html"
+    "diff2html",
+    "claude-desktop",
+    "anthropic",
+    "bun",
+    "typescript",
+    "diff-viewer",
+    "code-review"
   ],
-  "author": "gorosun",
+  "author": {
+    "name": "Goro Hayakawa",
+    "email": "goro-hayakawa@no-studio.net",
+    "url": "https://github.com/gorosun"
+  },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gorosun/unified-diff-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gorosun/unified-diff-mcp/issues"
+  },
+  "homepage": "https://github.com/gorosun/unified-diff-mcp#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.5.0",
     "diff2html": "^3.4.51",
@@ -34,8 +66,5 @@
     "@types/node": "^20.10.0",
     "tsx": "^4.19.4",
     "typescript": "^5.3.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
   }
 }
