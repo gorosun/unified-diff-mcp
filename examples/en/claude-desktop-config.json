@@ -1,0 +1,27 @@
+{
+  "systemPrompt": "Mandatory file editing workflow: 1) Execute filesystem edit_file with dryRun=true before editing, 2) Visualize diff with parse_filesystem_diff_image, 3) Explain changes to user and request explicit approval, 4) Execute actual editing after approval. Always follow this process and never modify files without user approval.",
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/username/Desktop"
+      ]
+    },
+    "claude-code": {
+      "command": "/Users/username/.bun/bin/claude",
+      "args": ["mcp", "serve"],
+      "env": {}
+    },
+    "unified-diff-mcp": {
+      "command": "/Users/username/.bun/bin/bun",
+      "args": ["/Users/username/projects/unified-diff-mcp/src/index.ts"],
+      "env": {
+        "NODE_ENV": "production",
+        "DEFAULT_AUTO_OPEN": "true",
+        "DEFAULT_OUTPUT_MODE": "html"
+      }
+    }
+  }
+}
