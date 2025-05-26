@@ -1,0 +1,14 @@
+# Ignore contents of generated-images directory but keep the directory (deprecated)
+generated-images/*
+!generated-images/.gitkeep
+
+# Ignore contents of output directory but keep the directory
+output/*
+!output/.gitkeep
+
+# Ignore contents of dist directory but keep the directory
+dist/*
+!dist/.gitkeep
+
+# Ignore macOS Finder files
+.DS_Store

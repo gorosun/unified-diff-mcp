@@ -1,0 +1,41 @@
+{
+  "name": "unified-diff-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for visualizing unified diffs with diff2html",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "bun build src/index.ts --outfile dist/index.js --target node",
+    "build:node": "tsc",
+    "dev": "bun --watch src/index.ts",
+    "start": "node dist/index.js",
+    "start:bun": "bun dist/index.js",
+    "start:dev": "bun src/index.ts",
+    "test": "bun test-sample.js",
+    "test:sample": "bun test-sample.js || /Users/gorosun/.bun/bin/bun test-sample.js",
+    "test:build": "npm run build && npm run start"
+  },
+  "keywords": [
+    "mcp",
+    "diff",
+    "visualization",
+    "unified-diff",
+    "diff2html"
+  ],
+  "author": "gorosun",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "diff2html": "^3.4.51",
+    "playwright-core": "^1.52.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.14",
+    "@types/node": "^20.10.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
