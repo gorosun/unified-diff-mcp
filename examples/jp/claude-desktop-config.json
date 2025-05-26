@@ -1,0 +1,22 @@
+{
+  "systemPrompt": "ファイル編集時の必須ワークフロー：1) 編集前にfilesystem edit_fileをdryRun=trueで実行、2) parse_filesystem_diff_imageで差分を視覚化、3) ユーザーに変更内容を説明し明示的な承認を求める、4) 承認後に実際の編集を実行。このプロセスを必ず順守し、ユーザー承認なしにファイルを変更してはいけません。",
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/path/to/your/project"
+      ]
+    },
+    "unified-diff-mcp": {
+      "command": "/Users/gorosun/.bun/bin/bun",
+      "args": ["/Users/gorosun/projects/gorosun/unified-diff-mcp/src/index.ts"],
+      "env": {
+        "NODE_ENV": "production",
+        "DEFAULT_AUTO_OPEN": "true",
+        "DEFAULT_OUTPUT_MODE": "html"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+# Ignore contents of output directory but keep the directory
+output/*
+!output/.gitkeep
+
+# Ignore contents of dist directory but keep the directory
+dist/*
+!dist/.gitkeep
+
+# Ignore contents of node_modules directory but keep the directory
+node_modules/*
+!node_modules/.gitkeep
+
+# Ignore macOS Finder files
+.DS_Store
