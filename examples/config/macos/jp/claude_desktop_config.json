@@ -6,12 +6,17 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "/path/to/your/project"
+        "/Users/username/Desktop"
       ]
     },
+    "claude-code": {
+      "command": "/Users/username/.bun/bin/claude",
+      "args": ["mcp", "serve"],
+      "env": {}
+    },
     "unified-diff-mcp": {
-      "command": "/Users/gorosun/.bun/bin/bun",
-      "args": ["/Users/gorosun/projects/gorosun/unified-diff-mcp/src/index.ts"],
+      "command": "/Users/username/.bun/bin/bun",
+      "args": ["/Users/username/projects/unified-diff-mcp/src/index.ts"],
       "env": {
         "NODE_ENV": "production",
         "DEFAULT_AUTO_OPEN": "true",
