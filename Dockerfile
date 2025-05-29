@@ -1,5 +1,5 @@
 # Builder stage
-FROM oven/bun:1 AS builder
+FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 # Copy package files with correct lockfile name
 COPY package.json bun.lock ./
@@ -11,7 +11,7 @@ RUN bun install --frozen-lockfile
 RUN bun build src/index.ts --outfile dist/index.js --target node --minify
 
 # Runtime stage
-FROM oven/bun:1
+FROM oven/bun:1-alpine
 WORKDIR /app
 COPY package.json ./
 RUN bun install --production --frozen-lockfile
