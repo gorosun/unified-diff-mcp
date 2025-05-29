@@ -7,7 +7,8 @@ COPY tsconfig.json ./
 COPY src ./src
 # Install dependencies and build
 RUN bun install --frozen-lockfile
-RUN bun run build
+# Build TypeScript to JavaScript directly with bun
+RUN bun build src/index.ts --outfile dist/index.js --target node --minify
 
 # Runtime stage
 FROM oven/bun:1
