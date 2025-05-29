@@ -21,7 +21,8 @@ RUN bun install --production --frozen-lockfile
 
 COPY --from=builder /app/dist ./dist
 
-# Remove Chromium-related environment variables as they're no longer needed
-# ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+# Set default environment variables for Docker environment
+ENV DEFAULT_AUTO_OPEN=false
+ENV DEFAULT_OUTPUT_MODE=html
 
 CMD ["bun", "dist/index.js"]
