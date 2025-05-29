@@ -10,7 +10,7 @@
 startCommand:
   type: stdio
   commandFunction: |-
-    (config) => ({command:'bun',args:['dist/index.js'],env:{NODE_ENV:'production',DEFAULT_AUTO_OPEN:config.defaultAutoOpen?.toString() || 'true',DEFAULT_OUTPUT_MODE:config.defaultOutputMode || 'html'}})
+    (config) => ({command:'bun',args:['dist/index.js'],env:{NODE_ENV:'production',DEFAULT_AUTO_OPEN:config.defaultAutoOpen?.toString() || 'true',DEFAULT_OUTPUT_MODE:config.defaultOutputMode || 'html',GITHUB_USERNAME:config.githubUsername || '',GITHUB_TOKEN:config.githubToken || ''}})
   configSchema:
     # JSON Schema defining the configuration options for the MCP.
     type: object
@@ -25,6 +25,14 @@ startCommand:
         default: html
         enum: ["html", "image"]
         description: Default output format (html or image)
+      githubUsername:
+        type: string
+        description: GitHub username for Gist integration (optional)
+      githubToken:
+        type: string
+        description: GitHub Personal Access Token with 'gist' scope for Gist integration (optional)
   exampleConfig:
     defaultAutoOpen: true
     defaultOutputMode: html
+    githubUsername: "your_github_username"
+    githubToken: "ghp_your_token_here"
