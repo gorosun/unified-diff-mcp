@@ -22,7 +22,7 @@ A Model Context Protocol (MCP) server for visualizing unified diffs using diff2h
 To install Unified Diff Visualizer for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@gorosun/unified-diff-mcp):
 
 ```bash
-npx -y @smithery/cli install @gorosun/unified-diff-mcp --client claude
+bunx @smithery/cli install @gorosun/unified-diff-mcp --client claude
 ```
 
 ### 1. Install Claude Desktop
@@ -46,6 +46,11 @@ $ powershell -c "irm bun.sh/install.ps1 | iex"
 $ bun --version
 ```
 
+**Mac: Enable bun for Claude Desktop:**
+```bash
+$ BUN_PATH=$(which bun) && sudo ln -sf $BUN_PATH /usr/local/bin/bun
+```
+
 **Note:** If `bun` command is not found, restart your terminal or use the full path returned by `which bun` in your configuration.
 
 ### 3. Install and Build Project
@@ -57,16 +62,21 @@ bun install
 
 ### 4. Configure Claude Desktop
 
-Choose your language configuration:
+Choose your platform and language configuration:
 
-- **English**: [examples/en/claude-desktop-config.json](examples/en/claude-desktop-config.json)
-- **日本語**: [examples/jp/claude-desktop-config.json](examples/jp/claude-desktop-config.json)
+**macOS:**
+- **English**: [examples/config/macos/en/claude_desktop_config.json](examples/config/macos/en/claude_desktop_config.json)
+- **日本語**: [examples/config/macos/jp/claude_desktop_config.json](examples/config/macos/jp/claude_desktop_config.json)
+
+**Windows:**
+- **English**: [examples/config/windows/en/claude_desktop_config.json](examples/config/windows/en/claude_desktop_config.json)
+- **日本語**: [examples/config/windows/jp/claude_desktop_config.json](examples/config/windows/jp/claude_desktop_config.json)
 
 Copy the configuration to your Claude Desktop config file:
 
 **macOS:**
 ```bash
-$ code ~/Library/Application Support/Claude/claude_desktop_config.json
+$ code ~/Library/Application\ Support/Claude/claude_desktop_config.json
 ```
 
 **Windows:**
@@ -96,11 +106,17 @@ The `DEFAULT_AUTO_OPEN` feature works on all platforms:
 
 ### Path Configuration
 
-Update the following placeholders in your configuration:
+The configuration files include helpful setup notes. Key points:
 
-- `/path/to/your/project` - Your project directory for filesystem MCP
-- `/Users/gorosun/.bun/bin/bun` - Your Bun executable path (use `which bun` to find this)
-- `/Users/gorosun/projects/gorosun/unified-diff-mcp/src/index.ts` - Your unified-diff-mcp path
+- Replace `/Users/username/` with your actual username
+- Replace project paths with your actual installation location
+- For Mac: Ensure `bun` is available in PATH (see setup instructions above)
+- For Windows: Update WSL paths if using claude-code integration
+
+**Mac: If bun command is not found by Claude Desktop:**
+```bash
+$ BUN_PATH=$(which bun) && sudo ln -sf $BUN_PATH /usr/local/bin/bun
+```
 
 **Find your Bun path:**
 ```bash
@@ -129,22 +145,8 @@ $ pwd
 }
 ```
 
-**Production (Bun - recommended):**
-```json
-{
-  "mcpServers": {
-    "unified-diff-mcp": {
-      "command": "/path/to/bun",  // Use output from: which bun
-      "args": ["/path/to/unified-diff-mcp/src/index.ts"],
-      "env": {
-        "NODE_ENV": "production",
-        "DEFAULT_AUTO_OPEN": "true",
-        "DEFAULT_OUTPUT_MODE": "html"
-      }
-    }
-  }
-}
-```
+**Production (recommended):**
+Use the provided configuration files which include optimized settings for production use.
 
 ## Advanced Usage
 

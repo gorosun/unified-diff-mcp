@@ -1,9 +1,16 @@
 # Smithery configuration file: https://smithery.ai/docs/build/project-config
 
+# Prerequisites:
+# This MCP server requires 'bun' to be available in the system PATH.
+# If you have bun installed via the official installer (in ~/.bun/bin/), create a symlink:
+# BUN_PATH=$(which bun) && sudo ln -sf $BUN_PATH /usr/local/bin/bun
+# 
+# For other installation methods, ensure 'bun' is accessible from /usr/local/bin or your system PATH.
+
 startCommand:
   type: stdio
   commandFunction: |-
-    (config) => ({command:'bun',args:['dist/index.js'],env:{NODE_ENV:'production',DEFAULT_AUTO_OPEN:config.defaultAutoOpen.toString(),DEFAULT_OUTPUT_MODE:config.defaultOutputMode}})
+    (config) => ({command:'bun',args:['src/index.ts'],env:{NODE_ENV:'production',DEFAULT_AUTO_OPEN:config.defaultAutoOpen?.toString() || 'true',DEFAULT_OUTPUT_MODE:config.defaultOutputMode || 'html'}})
   configSchema:
     # JSON Schema defining the configuration options for the MCP.
     type: object
@@ -11,12 +18,13 @@ startCommand:
     properties:
       defaultAutoOpen:
         type: boolean
-        default: false
+        default: true
         description: Automatically open generated diff files
       defaultOutputMode:
         type: string
         default: html
-        description: Default output format
+        enum: ["html", "image"]
+        description: Default output format (html or image)
   exampleConfig:
-    defaultAutoOpen: false
+    defaultAutoOpen: true
     defaultOutputMode: html

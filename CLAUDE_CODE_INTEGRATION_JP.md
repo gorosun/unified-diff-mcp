@@ -196,8 +196,9 @@ README.mdで説明した基本的な環境変数に加えて：
 ### 一般的な問題と解決策
 
 #### 「Bunコマンドが見つからない」
-- 解決策: 設定で `which bun` のフルパスを使用
-- 代替案: Bunインストール後にターミナルを再起動
+- **Mac解決策**: Claude Desktop用のシンボリックリンクを作成: `BUN_PATH=$(which bun) && sudo ln -sf $BUN_PATH /usr/local/bin/bun`
+- **代替案**: 設定で `which bun` のフルパスを使用
+- **一般的**: Bunインストール後にターミナルを再起動
 
 #### 「自動オープンが動作しない」
 - `DEFAULT_AUTO_OPEN=true` が設定されているか確認

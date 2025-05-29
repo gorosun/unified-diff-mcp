@@ -1,4 +1,12 @@
 {
+  "description": "unified-diff-mcp用のClaude Desktop設定ファイル（Windows版）",
+  "setup_notes": [
+    "C:\\Users\\username\\Desktopを実際のデスクトップパスに変更してください",
+    "C:\\projects\\unified-diff-mcp\\を実際のプロジェクトパスに変更してください",
+    "WSL内のclaudeパス /home/username/.nvm/versions/node/v22.16.0/bin/claudeを実際の場所に更新してください",
+    "bunコマンドがPATHで利用可能であることを確認してください"
+  ],
+
   "systemPrompt": "ファイル編集時の必須ワークフロー：1) 編集前にfilesystem edit_fileをdryRun=trueで実行、2) parse_filesystem_diff_imageで差分を視覚化、3) ユーザーに変更内容を説明し明示的な承認を求める、4) 承認後に実際の編集を実行。このプロセスを必ず順守し、ユーザー承認なしにファイルを変更してはいけません。",
   "mcpServers": {
     "filesystem": {

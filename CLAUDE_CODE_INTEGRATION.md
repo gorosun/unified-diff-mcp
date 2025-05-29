@@ -196,8 +196,9 @@ User Approval → filesystem edit → git diff → git commit
 ### Common Issues and Solutions
 
 #### \"Bun command not found\"
-- Solution: Use full path from `which bun` in configuration
-- Alternative: Restart terminal after Bun installation
+- **Mac Solution**: Create symlink for Claude Desktop: `BUN_PATH=$(which bun) && sudo ln -sf $BUN_PATH /usr/local/bin/bun`
+- **Alternative**: Use full path from `which bun` in configuration
+- **General**: Restart terminal after Bun installation
 
 #### \"Auto-open not working\"
 - Check `DEFAULT_AUTO_OPEN=true` is set

@@ -1,4 +1,11 @@
 {
+  "description": "Claude Desktop Configuration for unified-diff-mcp with setup instructions",
+  "setup_notes": [
+    "Replace C:\\Users\\username\\Desktop with your actual Desktop path",
+    "Replace C:\\projects\\unified-diff-mcp\\ with your actual project path",
+    "Update WSL path /home/username/.nvm/versions/node/v22.16.0/bin/claude to your claude installation",
+    "Ensure bun is installed and available in your PATH"
+  ],
   "systemPrompt": "Mandatory file editing workflow: 1) Execute filesystem edit_file with dryRun=true before editing, 2) Visualize diff with parse_filesystem_diff_image, 3) Explain changes to user and request explicit approval, 4) Execute actual editing after approval. Always follow this process and never modify files without user approval.",
   "mcpServers": {
     "filesystem": {

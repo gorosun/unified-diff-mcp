@@ -1,4 +1,10 @@
 {
+  "description": "unified-diff-mcp用のClaude Desktop設定ファイル",
+  "setup_notes": [
+    "/Users/username/projects/unified-diff-mcp/を実際のプロジェクトパスに変更してください",
+    "bunコマンドを有効化: BUN_PATH=$(which bun) && sudo ln -sf $BUN_PATH /usr/local/bin/bun",
+    "claudeコマンドを有効化: CLAUDE_PATH=$(which claude) && sudo ln -sf $CLAUDE_PATH /usr/local/bin/claude"
+  ],
   "systemPrompt": "ファイル編集時の必須ワークフロー：1) 編集前にfilesystem edit_fileをdryRun=trueで実行、2) parse_filesystem_diff_imageで差分を視覚化、3) ユーザーに変更内容を説明し明示的な承認を求める、4) 承認後に実際の編集を実行。このプロセスを必ず順守し、ユーザー承認なしにファイルを変更してはいけません。",
   "mcpServers": {
     "filesystem": {
@@ -10,12 +16,12 @@
       ]
     },
     "claude-code": {
-      "command": "/Users/username/.bun/bin/claude",
+      "command": "claude",
       "args": ["mcp", "serve"],
       "env": {}
     },
     "unified-diff-mcp": {
-      "command": "/Users/username/.bun/bin/bun",
+      "command": "bun",
       "args": ["/Users/username/projects/unified-diff-mcp/src/index.ts"],
       "env": {
         "NODE_ENV": "production",
