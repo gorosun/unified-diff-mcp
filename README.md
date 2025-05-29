@@ -14,6 +14,8 @@ Beautiful diff visualization for Claude Desktop. Transform code diffs into stunn
 - 🔄 **Auto-delete functionality** for temporary diffs
 - 🖥️ **Cross-platform support** (Windows, macOS, Linux)
 - ⚡ **High-performance** with Bun runtime
+- 🌐 **Web Claude Support** with enhanced security levels
+- 🔒 **Multi-level security** (Low/Medium/High) for different use cases
 
 ## 🚀 Quick Start
 
@@ -58,6 +60,7 @@ bunx @smithery/cli install @gorosun/unified-diff-mcp --client claude --config '{
 | **Image Export** | `Please visualize and save the following diff as a PNG image:`<br>`以下のdiffを可視化してPNG画像で保存してください` | `visualize_diff_output_file` | Local PNG image |
 | **Code Review** | `Please visualize the following diff in side-by-side format:`<br>`以下のdiffをside-by-side形式で可視化してください` | Either tool | Side-by-side comparison |
 | **Documentation** | `Please visualize and save the following diff as an HTML file:`<br>`以下のdiffを可視化してHTMLファイルで保存してください` | `visualize_diff_output_file` | Local HTML file |
+| **🌐 Web Claude (Secure)** | `Please visualize this diff with high security for Web Claude:`<br>`以下のdiffをWeb版Claude用に高セキュリティで可視化してください` | `visualize_diff_html_content` | Password-protected Secret Gist |
 
 ### Share diff instantly (GitHub Gist)
 ```
@@ -178,6 +181,46 @@ code %APPDATA%\Claude\claude_desktop_config.json
 ```
 
 ## 📚 Advanced Usage
+
+### 🔒 Web Claude Security Levels
+
+For Web Claude users where GitHub Token isn't available, you can choose from multiple security levels:
+
+| Security Level | Configuration | Features | Use Cases |
+|---------|---------|--------|--------|
+| **🟢 Low** | Secret Gist + 60min auto-delete | URL-only access | Code examples, learning |
+| **🟡 Medium** | Secret Gist + Password + 30min auto-delete | URL + Access code required | Team reviews |
+| **🔴 High** | Secret Gist + Password + 15min auto-delete | URL + Access code + Short duration | Sensitive code |
+
+### Usage Example
+```
+Please visualize this diff with high security for Web Claude:
+--- a/config.js
++++ b/config.js
+@@ -1,3 +1,4 @@
+ const config = {
+-  apiKey: 'old-key'
++  apiKey: 'new-secure-key',
++  timeout: 5000
+ };
+```
+
+**Response Example**:
+```
+🌐 **Web Claude Compatible - Secure Diff Visualization**
+
+🔴 **Security Level**: High Security - Secret Gist + Password (15min auto-delete)
+📋 **Preview Link**: https://htmlpreview.github.io/?...
+🔑 **Access Code**: `a7x9k2`
+⏰ **Auto-delete**: 15 minutes
+```
+
+### 🔄 Fallback Functionality
+
+When GitHub Token is unavailable, the system falls back to local files:
+- Password-protected HTML saved as temporary file
+- Automatic browser opening
+- Access control based on security level
 
 For detailed setup and integration guides:
 
