@@ -1,5 +1,7 @@
 # Unified Diff MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@gorosun/unified-diff-mcp)](https://smithery.ai/server/@gorosun/unified-diff-mcp)
+
 A Model Context Protocol (MCP) server for visualizing unified diffs using diff2html. Designed to work seamlessly with filesystem edit_file dry-run output.
 
 <img src="examples/screenshot.png" alt="Unified Diff Visualization Screenshot" width="800" style="max-width: 100%; height: auto;">
@@ -14,6 +16,14 @@ A Model Context Protocol (MCP) server for visualizing unified diffs using diff2h
 - Browser cache-busting with timestamp query parameters
 
 ## Quick Start
+
+### Installing via Smithery
+
+To install Unified Diff Visualizer for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@gorosun/unified-diff-mcp):
+
+```bash
+npx -y @smithery/cli install @gorosun/unified-diff-mcp --client claude
+```
 
 ### 1. Install Claude Desktop
 
