@@ -15,8 +15,13 @@ FROM oven/bun:1-alpine
 WORKDIR /app
 COPY package.json ./
 RUN bun install --production --frozen-lockfile
-# Install chromium for Playwright
-RUN apk add --no-cache chromium nss
+
+# Remove Chromium installation to reduce image size for Smithery deployment
+# RUN apk add --no-cache chromium nss
+
 COPY --from=builder /app/dist ./dist
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+# Remove Chromium-related environment variables as they're no longer needed
+# ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 CMD ["bun", "dist/index.js"]
