@@ -19,8 +19,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Get default settings from environment
-const DEFAULT_AUTO_OPEN = process.env.DEFAULT_AUTO_OPEN === 'true';
-const DEFAULT_OUTPUT_MODE = (process.env.DEFAULT_OUTPUT_MODE as 'image' | 'html') || 'html';
+const DEFAULT_AUTO_OPEN = process.env.DEFAULT_AUTO_OPEN === "true";
+const DEFAULT_OUTPUT_MODE =
+  (process.env.DEFAULT_OUTPUT_MODE as "image" | "html") || "html";
 
 const server = new Server(
   {
@@ -117,7 +118,8 @@ function generateDiffHtml(
   });
 
   // Different styles for HTML vs image output
-  const customStyles = isImageOutput ? `
+  const customStyles = isImageOutput
+    ? `
         /* Image-specific styles for PNG generation */
         .d2h-diff-table {
             font-size: 11px;
@@ -156,7 +158,8 @@ function generateDiffHtml(
             word-wrap: break-word !important;
             word-break: break-all !important;
             white-space: pre-wrap !important;
-        }` : `
+        }`
+    : `
         /* HTML-specific: Minimal overrides to preserve Diff2Html defaults */`;
 
   // Wrap in complete HTML document
@@ -284,26 +287,31 @@ async function generateDiffVisualization(
       const execAsync = promisify(exec);
 
       // Add timestamp query parameter to avoid browser cache
-      const timestamp = new Date().toISOString().replace(/[-T:]/g, '').slice(0, 14); // yyyymmddHHMMss
-      const openUrl = outputType === "html" ? `file://${filePath}?t=${timestamp}` : filePath;
-      
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[-T:]/g, "")
+        .slice(0, 14); // yyyymmddHHMMss
+      const openUrl =
+        outputType === "html" ? `file://${filePath}?t=${timestamp}` : filePath;
+
       console.error(`Attempting to open ${outputType}: ${openUrl}`);
-      
+
       // Cross-platform file opening
       const platform = process.platform;
       let command: string;
-      
-      if (platform === 'win32') {
+
+      if (platform === "win32") {
         // Windows: use 'start' command
         command = `start "" "${filePath}"`;
-      } else if (platform === 'darwin') {
+      } else if (platform === "darwin") {
         // macOS: use 'open' command
-        command = outputType === "html" ? `open "${openUrl}"` : `open "${filePath}"`;
+        command =
+          outputType === "html" ? `open "${openUrl}"` : `open "${filePath}"`;
       } else {
         // Linux: use 'xdg-open' command
         command = `xdg-open "${filePath}"`;
       }
-      
+
       await execAsync(command);
       console.error(`Successfully opened ${outputType}: ${filePath}`);
     } catch (error) {
@@ -312,11 +320,11 @@ async function generateDiffVisualization(
       try {
         const { exec } = await import("child_process");
         const platform = process.platform;
-        
-        if (platform === 'win32') {
+
+        if (platform === "win32") {
           // Windows fallback
           exec(`explorer "${filePath}"`);
-        } else if (platform === 'darwin') {
+        } else if (platform === "darwin") {
           // macOS fallback with AppleScript
           exec(
             `osascript -e 'tell application "Finder" to open POSIX file "${filePath}"'`
@@ -355,39 +363,177 @@ async function generateDiffImage(
 }
 
 /**
- * Parse filesystem edit_file dry-run output
+ * Create GitHub Gist with diff visualization
  */
-function parseDryRunOutput(dryRunText: string): {
-  oldPath?: string;
-  newPath?: string;
-  diffContent: string;
-} {
-  const lines = dryRunText.split("\n");
-  let oldPath: string | undefined;
-  let newPath: string | undefined;
-  let diffStartIndex = 0;
+async function createGitHubGist(
+  diffText: string,
+  options: {
+    outputFormat?: "line-by-line" | "side-by-side";
+    showFileList?: boolean;
+    highlight?: boolean;
+    oldPath?: string;
+    newPath?: string;
+    expiryMinutes?: number;
+    public?: boolean;
+  } = {}
+): Promise<{
+  success: boolean;
+  htmlUrl: string;
+  rawUrl: string;
+  gistUrl: string;
+  editUrl: string;
+  gistId: string;
+  expiresAt: Date;
+  message: string;
+}> {
+  const {
+    outputFormat = "side-by-side",
+    showFileList = true,
+    highlight = true,
+    oldPath = "file.txt",
+    newPath = "file.txt",
+    expiryMinutes = 30,
+    public: isPublic = false,
+  } = options;
 
-  // Look for file paths in the dry-run output
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.includes("---") && line.includes("/")) {
-      oldPath = line.replace(/^---\s*/, "").trim();
-    } else if (line.includes("+++") && line.includes("/")) {
-      newPath = line.replace(/^\+\+\+\s*/, "").trim();
-      diffStartIndex = i + 1;
-      break;
-    } else if (line.startsWith("@@")) {
-      diffStartIndex = i;
-      break;
-    }
+  const githubToken = process.env.GITHUB_TOKEN;
+  if (!githubToken) {
+    throw new Error("GITHUB_TOKEN environment variable is required");
   }
 
-  const diffContent = lines.slice(diffStartIndex).join("\n");
+  const timestamp = Date.now();
+  const filename = `diff-${timestamp}.html`;
 
-  return {
+  // Generate HTML content with expiry notice
+  const baseHtml = generateDiffHtml(diffText, {
+    outputFormat,
+    showFileList,
+    highlight,
     oldPath,
     newPath,
-    diffContent: dryRunText, // Use full text as diff content
+    isImageOutput: false,
+  });
+
+  // Add expiry notice and countdown to HTML
+  const htmlWithExpiry = baseHtml
+    .replace(
+      "<body>",
+      `<body>
+    <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;">
+        <span id="expiry-notice">⏰ This page will auto-delete in ${expiryMinutes} minutes</span>
+    </div>`
+    )
+    .replace(
+      "</body>",
+      `
+    <script>
+        // Countdown timer
+        const expiryTime = Date.now() + ${expiryMinutes * 60 * 1000};
+        const updateCountdown = () => {
+            const remaining = Math.max(0, Math.floor((expiryTime - Date.now()) / 1000));
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            const notice = document.getElementById('expiry-notice');
+            if (notice) {
+                notice.innerHTML = remaining > 0
+                    ? \`⏰ This page will auto-delete in \${minutes}:\${seconds.toString().padStart(2, '0')}\`
+                    : '🗑️ This content has expired';
+            }
+            if (remaining <= 0) {
+                document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Helvetica, Arial, sans-serif;"><h1>🗑️ This content has expired</h1><p>This temporary diff visualization has been automatically removed.</p></div>';
+            }
+        };
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+    </script>
+</body>`
+    );
+
+  // Create Gist
+  const gistData = {
+    description: `Temporary diff visualization - Expires in ${expiryMinutes}min (${oldPath} → ${newPath})`,
+    public: isPublic,
+    files: {
+      [filename]: {
+        content: htmlWithExpiry,
+      },
+    },
+  };
+
+  const response = await fetch("https://api.github.com/gists", {
+    method: "POST",
+    headers: {
+      Authorization: `token ${githubToken}`,
+      Accept: "application/vnd.github.v3+json",
+      "Content-Type": "application/json",
+      "User-Agent": "unified-diff-mcp/1.0.0",
+    },
+    body: JSON.stringify(gistData),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `GitHub API error: ${response.status} ${response.statusText}\n${errorText}`
+    );
+  }
+
+  const gist = await response.json();
+
+  // Raw URL for direct HTML display
+  const rawUrl = `https://gist.githubusercontent.com/${gist.owner.login}/${gist.id}/raw/${filename}`;
+  const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
+
+  // Schedule automatic deletion
+  setTimeout(async () => {
+    try {
+      const deleteResponse = await fetch(
+        `https://api.github.com/gists/${gist.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `token ${githubToken}`,
+            Accept: "application/vnd.github.v3+json",
+            "User-Agent": "unified-diff-mcp/1.0.0",
+          },
+        }
+      );
+      console.error(
+        `🗑️ Gist ${gist.id} ${
+          deleteResponse.ok
+            ? "deleted successfully"
+            : `deletion failed: ${deleteResponse.status}`
+        }`
+      );
+    } catch (error) {
+      console.error(`🗑️ Failed to delete gist ${gist.id}:`, error);
+    }
+  }, expiryMinutes * 60 * 1000);
+
+  const message = `🎉 GitHub Gist created successfully!
+🌐 View HTML: https://htmlpreview.github.io/?${rawUrl}
+📋 Gist page: ${gist.html_url}
+✏️ Edit: ${gist.html_url}/edit
+🔐 Visibility: ${isPublic ? "Public" : "Secret"}
+⏰ Auto-delete: ${expiresAt.toLocaleString()}
+
+💡 Alternative viewers:
+- GitHack: https://gist.githack.com/${gist.owner.login}/${
+    gist.id
+  }/raw/${filename}
+- RawGit: https://gistcdn.rawgit.org/${gist.owner.login}/${
+    gist.id
+  }/${gist.files[filename].raw_url.split("/").pop()}/${filename}`;
+
+  return {
+    success: true,
+    htmlUrl: `https://htmlpreview.github.io/?${rawUrl}`, // HTML Preview URL
+    rawUrl: rawUrl, // Raw URL
+    gistUrl: gist.html_url,
+    editUrl: `${gist.html_url}/edit`,
+    gistId: gist.id,
+    expiresAt,
+    message,
   };
 }
 
@@ -396,9 +542,68 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
-        name: "visualize_diff_image",
+        name: "visualize_diff_html_content",
         description:
-          "Generate image visualization of unified diff and save to output directory",
+          "Create a temporary GitHub Gist with HTML diff visualization that auto-deletes after specified time (replaces old HTML content functionality)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            diff: {
+              type: "string",
+              description:
+                "Unified diff text or filesystem edit_file dry-run output",
+            },
+            format: {
+              type: "string",
+              enum: ["line-by-line", "side-by-side"],
+              description: "Output format for the diff visualization",
+              default: "side-by-side",
+            },
+            showFileList: {
+              type: "boolean",
+              description: "Show file list summary",
+              default: true,
+            },
+            highlight: {
+              type: "boolean",
+              description: "Enable syntax highlighting",
+              default: true,
+            },
+            oldPath: {
+              type: "string",
+              description: "Path of the original file (optional)",
+            },
+            newPath: {
+              type: "string",
+              description: "Path of the modified file (optional)",
+            },
+            autoOpen: {
+              type: "boolean",
+              description:
+                "Automatically open the HTML preview in browser",
+              default: false,
+            },
+            expiryMinutes: {
+              type: "number",
+              description: "Minutes until automatic deletion",
+              default: 30,
+              minimum: 1,
+              maximum: 1440,
+            },
+            public: {
+              type: "boolean",
+              description:
+                "Create as public gist (default: false for secret gist)",
+              default: false,
+            },
+          },
+          required: ["diff"],
+        },
+      },
+      {
+        name: "visualize_diff_output_file",
+        description:
+          "Generate diff visualization and save to local output directory (PNG or HTML file)",
         inputSchema: {
           type: "object",
           properties: {
@@ -446,43 +651,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["diff"],
         },
       },
-      {
-        name: "parse_filesystem_diff_image",
-        description:
-          "Parse filesystem edit_file dry-run output and generate image diff",
-        inputSchema: {
-          type: "object",
-          properties: {
-            dryRunOutput: {
-              type: "string",
-              description: "Output from filesystem edit_file with dryRun=true",
-            },
-            format: {
-              type: "string",
-              enum: ["line-by-line", "side-by-side"],
-              description: "Output format for the diff visualization",
-              default: "side-by-side",
-            },
-            highlight: {
-              type: "boolean",
-              description: "Enable syntax highlighting",
-              default: true,
-            },
-            autoOpen: {
-              type: "boolean",
-              description: "Automatically open the generated output",
-              default: DEFAULT_AUTO_OPEN,
-            },
-            outputType: {
-              type: "string",
-              enum: ["image", "html"],
-              description: "Output format: image (PNG) or HTML file",
-              default: DEFAULT_OUTPUT_MODE,
-            },
-          },
-          required: ["dryRunOutput"],
-        },
-      },
     ],
   };
 });
@@ -492,7 +660,221 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
   try {
-    if (name === "visualize_diff_image") {
+    if (name === "visualize_diff_html_content") {
+      const {
+        diff,
+        format = "side-by-side",
+        showFileList = true,
+        highlight = true,
+        oldPath,
+        newPath,
+        autoOpen = false,
+        expiryMinutes = 30,
+        public: isPublic = false,
+      } = args as {
+        diff: string;
+        format?: "line-by-line" | "side-by-side";
+        showFileList?: boolean;
+        highlight?: boolean;
+        oldPath?: string;
+        newPath?: string;
+        autoOpen?: boolean;
+        expiryMinutes?: number;
+        public?: boolean;
+      };
+
+      if (!diff || typeof diff !== "string") {
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          "diff parameter is required and must be a string"
+        );
+      }
+
+      if (expiryMinutes < 1 || expiryMinutes > 1440) {
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          "expiryMinutes must be between 1 and 1440 (24 hours)"
+        );
+      }
+
+      try {
+        const result = await createGitHubGist(diff, {
+          outputFormat: format,
+          showFileList,
+          highlight,
+          oldPath,
+          newPath,
+          expiryMinutes,
+          public: isPublic,
+        });
+
+        // For backward compatibility, also include the raw HTML content
+        const htmlContent = generateDiffHtml(diff, {
+          outputFormat: format,
+          showFileList,
+          highlight,
+          oldPath,
+          newPath,
+          isImageOutput: false,
+        });
+
+        // If autoOpen is requested, also open in browser
+        if (autoOpen) {
+          try {
+            const { exec } = await import("child_process");
+            const { promisify } = await import("util");
+            const execAsync = promisify(exec);
+
+            const platform = process.platform;
+            let command: string;
+
+            if (platform === "win32") {
+              command = `start "" "${result.htmlUrl}"`;
+            } else if (platform === "darwin") {
+              command = `open "${result.htmlUrl}"`;
+            } else {
+              command = `xdg-open "${result.htmlUrl}"`;
+            }
+
+            await execAsync(command);
+
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `${
+                    result.message
+                  }\n\n🌐 **Auto-opened in browser!**\n\n📋 **Raw HTML Content** (${
+                    htmlContent.length
+                  } chars):\n\n\`\`\`html\n${htmlContent.slice(0, 1000)}${
+                    htmlContent.length > 1000
+                      ? "...\n[Content truncated - see GitHub Gist for full HTML]"
+                      : ""
+                  }\n\`\`\``,
+                },
+              ],
+            };
+          } catch (openError) {
+            // If browser open fails, just return the normal result
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `${
+                    result.message
+                  }\n\n⚠️ **Could not auto-open browser**: ${openError}\n\n📋 **Raw HTML Content** (${
+                    htmlContent.length
+                  } chars):\n\n\`\`\`html\n${htmlContent.slice(0, 1000)}${
+                    htmlContent.length > 1000
+                      ? "...\n[Content truncated - see GitHub Gist for full HTML]"
+                      : ""
+                  }\n\`\`\``,
+                },
+              ],
+            };
+          }
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `${result.message}\n\n📋 **Raw HTML Content** (${
+                htmlContent.length
+              } chars):\n\n\`\`\`html\n${htmlContent.slice(0, 1000)}${
+                htmlContent.length > 1000
+                  ? "...\n[Content truncated - see GitHub Gist for full HTML]"
+                  : ""
+              }\n\`\`\``,
+            },
+          ],
+        };
+      } catch (error) {
+        // Fallback to old behavior if GitHub token is not available
+        if (error instanceof Error && error.message.includes("GITHUB_TOKEN")) {
+          const htmlContent = generateDiffHtml(diff, {
+            outputFormat: format,
+            showFileList,
+            highlight,
+            oldPath,
+            newPath,
+            isImageOutput: false,
+          });
+
+          // If autoOpen is requested, save to temp file and open browser
+          if (autoOpen) {
+            const fs = await import("fs/promises");
+            const os = await import("os");
+            const path = await import("path");
+
+            // Create temp file with timestamp
+            const timestamp = new Date()
+              .toISOString()
+              .replace(/[-T:]/g, "")
+              .slice(0, 14);
+            const tempFileName = `diff-${timestamp}.html`;
+            const tempFilePath = path.join(os.tmpdir(), tempFileName);
+
+            // Save HTML to temp file
+            await fs.writeFile(tempFilePath, htmlContent, "utf8");
+
+            // Open in browser
+            try {
+              const { exec } = await import("child_process");
+              const { promisify } = await import("util");
+              const execAsync = promisify(exec);
+
+              const platform = process.platform;
+              let command: string;
+
+              if (platform === "win32") {
+                command = `start "" "${tempFilePath}"`;
+              } else if (platform === "darwin") {
+                command = `open "${tempFilePath}"`;
+              } else {
+                command = `xdg-open "${tempFilePath}"`;
+              }
+
+              await execAsync(command);
+
+              return {
+                content: [
+                  {
+                    type: "text",
+                    text: `⚠️ GitHub token not available - fallback to local file\n\n🌐 **Opened in browser**: ${tempFilePath}\n\n📋 **HTML Content** (${htmlContent.length} chars):\n\n\`\`\`html\n${htmlContent}\n\`\`\``,
+                  },
+                ],
+              };
+            } catch (openError) {
+              return {
+                content: [
+                  {
+                    type: "text",
+                    text: `⚠️ GitHub token not available - fallback to local HTML\n\n⚠️ **Could not open browser**: ${openError}\n📁 **Saved to**: ${tempFilePath}\n\n📋 **HTML Content**:\n\n\`\`\`html\n${htmlContent}\n\`\`\``,
+                  },
+                ],
+              };
+            }
+          }
+
+          return {
+            content: [
+              {
+                type: "text",
+                text: `⚠️ GitHub token not available - returning HTML content only\n\n💡 **Set GITHUB_TOKEN environment variable for GitHub Gist functionality**\n\n📋 **HTML Content**:\n\n\`\`\`html\n${htmlContent}\n\`\`\``,
+              },
+            ],
+          };
+        }
+
+        throw new McpError(
+          ErrorCode.InternalError,
+          `GitHub Gist creation failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    } else if (name === "visualize_diff_output_file") {
       const {
         diff,
         format = "side-by-side",
@@ -535,53 +917,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           {
             type: "text",
             text: `Generated diff ${outputType}: ${filePath}${
-              autoOpen ? " (opened automatically)" : ""
-            }`,
-          },
-        ],
-      };
-    } else if (name === "parse_filesystem_diff_image") {
-      const {
-        dryRunOutput,
-        format = "side-by-side",
-        highlight = true,
-        autoOpen = DEFAULT_AUTO_OPEN,
-        outputType = DEFAULT_OUTPUT_MODE,
-      } = args as {
-        dryRunOutput: string;
-        format?: "line-by-line" | "side-by-side";
-        highlight?: boolean;
-        autoOpen?: boolean;
-        outputType?: "image" | "html";
-      };
-
-      if (!dryRunOutput || typeof dryRunOutput !== "string") {
-        throw new McpError(
-          ErrorCode.InvalidParams,
-          "dryRunOutput parameter is required and must be a string"
-        );
-      }
-
-      const parsed = parseDryRunOutput(dryRunOutput);
-      const filePath = await generateDiffVisualization(parsed.diffContent, {
-        outputFormat: format,
-        showFileList: true,
-        highlight,
-        oldPath: parsed.oldPath,
-        newPath: parsed.newPath,
-        autoOpen,
-        outputType,
-      });
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Parsed filesystem diff and generated ${outputType}:\n${
-              parsed.oldPath ? `Old: ${parsed.oldPath}` : ""
-            }\n${
-              parsed.newPath ? `New: ${parsed.newPath}` : ""
-            }\n${outputType === "html" ? "File" : "Image"}: ${filePath}${
               autoOpen ? " (opened automatically)" : ""
             }`,
           },
