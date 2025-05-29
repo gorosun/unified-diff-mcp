@@ -20,7 +20,12 @@ Beautiful diff visualization for Claude Desktop. Transform code diffs into stunn
 ### Installing via Smithery
 
 ```bash
-bunx @smithery/cli install @gorosun/unified-diff-mcp --client claude
+bunx @smithery/cli install @gorosun/unified-diff-mcp --client claude --config '{
+  "defaultAutoOpen": true,
+  "defaultOutputMode": "html",
+  "githubUsername": "your_actual_github_username",
+  "githubToken": "ghp_your_actual_token_here"
+}'
 ```
 
 ### Manual Installation
@@ -42,6 +47,17 @@ bunx @smithery/cli install @gorosun/unified-diff-mcp --client claude
 | **`visualize_diff_output_file`** | Local file storage | PNG/HTML files | Local storage, presentations |
 
 ## 📖 Usage Examples
+
+### 🎯 Optimal Prompts by Purpose
+
+| Purpose | Recommended Prompt | Tool Used | Output |
+|---------|-------------------|-----------|--------|
+| **Quick Preview** | `Please visualize and preview the following diff:`<br>`以下のdiffを可視化してプレビューしてください` | `visualize_diff_html_content` | GitHub Gist + HTML preview URL |
+| **Local Storage** | `Please visualize and save the following diff to a file:`<br>`以下のdiffを可視化してファイルに保存してください` | `visualize_diff_output_file` | Local HTML/PNG file |
+| **Share with Others** | `Please visualize the following diff and create a shareable link:`<br>`以下のdiffを可視化して共有リンクを作成してください` | `visualize_diff_html_content` | GitHub Gist with shareable URL |
+| **Image Export** | `Please visualize and save the following diff as a PNG image:`<br>`以下のdiffを可視化してPNG画像で保存してください` | `visualize_diff_output_file` | Local PNG image |
+| **Code Review** | `Please visualize the following diff in side-by-side format:`<br>`以下のdiffをside-by-side形式で可視化してください` | Either tool | Side-by-side comparison |
+| **Documentation** | `Please visualize and save the following diff as an HTML file:`<br>`以下のdiffを可視化してHTMLファイルで保存してください` | `visualize_diff_output_file` | Local HTML file |
 
 ### Share diff instantly (GitHub Gist)
 ```
