@@ -2,10 +2,8 @@
 
 startCommand:
   type: stdio
-  commandFunction:
-    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
-    |-
-    (config) => ({command:'node',args:['dist/index.js'],env:{NODE_ENV:'production',DEFAULT_AUTO_OPEN:config.defaultAutoOpen.toString(),DEFAULT_OUTPUT_MODE:config.defaultOutputMode}})
+  commandFunction: |-
+    (config) => ({command:'bun',args:['dist/index.js'],env:{NODE_ENV:'production',DEFAULT_AUTO_OPEN:config.defaultAutoOpen.toString(),DEFAULT_OUTPUT_MODE:config.defaultOutputMode}})
   configSchema:
     # JSON Schema defining the configuration options for the MCP.
     type: object
