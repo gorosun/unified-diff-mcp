@@ -1,223 +1,323 @@
-# Claude Desktop & Code MCP 統合 - 詳細ガイド
+# 高度な統合ガイド
 
-このドキュメントは、メインのREADME.mdでカバーされていない詳細情報を提供します。
+このドキュメントは、上級ユーザーおよび開発者向けの詳細な技術情報を提供します。
 
-## MCPツール仕様
+## 🛠️ 現在のツール仕様
 
-### HTML視覚化ツール
+### 利用可能なツール (v1.0+)
 
-#### `visualize_diff`
+| ツール | 目的 | 出力 | 最適な用途 |
+|--------|------|------|-----------|
+| **`visualize_diff_html_content`** | GitHub Gist + ブラウザ表示 | GitHub Gist URL + HTMLプレビュー | 共有、即座の表示 |
+| **`visualize_diff_output_file`** | ローカルファイル保存 | ローカルPNG/HTMLファイル | ドキュメント、プレゼンテーション |
 
-diff2htmlを使用してunified diffのHTML視覚化を生成します。
+### 詳細パラメータリファレンス
 
-**パラメータ:**
-- `diff` (string, required): Unified diff テキストまたは filesystem edit_file dry-run出力
-- `format` (string, optional): 出力形式 - 'line-by-line' または 'side-by-side' (デフォルト: 'side-by-side')
-- `showFileList` (boolean, optional): ファイルリスト概要を表示 (デフォルト: true)
-- `highlight` (boolean, optional): シンタックスハイライトを有効化 (デフォルト: true)
-- `oldPath` (string, optional): 元ファイルのパス
-- `newPath` (string, optional): 変更後ファイルのパス
+#### `visualize_diff_html_content`
 
-#### `parse_filesystem_diff`
+**目的**: 美しいHTML差分可視化を含む一時的なGitHub Gistを作成
 
-filesystem edit_file dry-run出力を解析してHTML diffを生成します。
+**パラメータ**:
+- **`diff`** (string, 必須): 統一差分テキストまたはfilesystem edit_file dry-run出力
+- **`format`** (string): `'line-by-line'` または `'side-by-side'` (デフォルト: `'side-by-side'`)
+- **`showFileList`** (boolean): ファイルリストサマリーを表示 (デフォルト: `true`)
+- **`highlight`** (boolean): シンタックスハイライトを有効化 (デフォルト: `true`)
+- **`oldPath`** (string): コンテキスト表示用の元ファイルパス
+- **`newPath`** (string): コンテキスト表示用の変更後ファイルパス
+- **`autoOpen`** (boolean): ブラウザでHTMLプレビューを自動表示 (デフォルト: `false`)
+- **`expiryMinutes`** (number): 自動削除時間、1-1440分 (デフォルト: `30`)
+- **`public`** (boolean): パブリックGist vs シークレットGist (デフォルト: `false`)
 
-**パラメータ:**
-- `dryRunOutput` (string, required): filesystem edit_file with dryRun=true の出力
-- `format` (string, optional): 出力形式 - 'line-by-line' または 'side-by-side' (デフォルト: 'side-by-side')
-- `highlight` (boolean, optional): シンタックスハイライトを有効化 (デフォルト: true)
+**出力**:
+- HTMLプレビュー付きGitHub Gist URL
+- Raw HTMLコンテンツ（フォールバック用）
+- 複数のビューアオプション（HTMLPreview、GitHack等）
 
-### ビジュアル化ツール
+#### `visualize_diff_output_file`
 
-#### `visualize_diff_image`
+**目的**: 差分可視化を生成してローカル出力ディレクトリに保存
 
-unified diffのHTMLイメージまたは画像イメージで生成して視覚化します。
+**パラメータ**:
+- **`diff`** (string, 必須): 統一差分テキストまたはfilesystem edit_file dry-run出力
+- **`format`** (string): `'line-by-line'` または `'side-by-side'` (デフォルト: `'side-by-side'`)
+- **`showFileList`** (boolean): ファイルリストサマリーを表示 (デフォルト: `true`)
+- **`highlight`** (boolean): シンタックスハイライトを有効化 (デフォルト: `true`)
+- **`oldPath`** (string): コンテキスト表示用の元ファイルパス
+- **`newPath`** (string): コンテキスト表示用の変更後ファイルパス
+- **`autoOpen`** (boolean): 生成ファイルを自動表示 (デフォルト: `DEFAULT_AUTO_OPEN`から)
+- **`outputType`** (string): `'html'` または `'image'` (デフォルト: `DEFAULT_OUTPUT_MODE`から)
 
-**パラメータ:**
-- `diff` (string, required): Unified diff テキストまたは filesystem edit_file dry-run出力
-- `format` (string, optional): 出力形式 - 'line-by-line' または 'side-by-side' (デフォルト: 'side-by-side')
-- `showFileList` (boolean, optional): ファイルリスト概要を表示 (デフォルト: true)
-- `highlight` (boolean, optional): シンタックスハイライトを有効化 (デフォルト: true)
-- `oldPath` (string, optional): 元ファイルのパス
-- `newPath` (string, optional): 変更後ファイルのパス
+**出力**:
+- ローカルファイル: `/path/to/project/output/diff-image.html` または `.png`
+- 固定ファイル名によりディスク容量の無駄遣いを防止
 
-#### `parse_filesystem_diff_image`
+## 🏗️ アーキテクチャ詳細
 
-filesystem edit_file dry-run出力を解析してHTMLイメージまたは画像イメージ diffを生成します。
+### 差分処理パイプライン
 
-**パラメータ:**
-- `dryRunOutput` (string, required): filesystem edit_file with dryRun=true の出力
-- `format` (string, optional): 出力形式 - 'line-by-line' または 'side-by-side' (デフォルト: 'side-by-side')
-- `highlight` (boolean, optional): シンタックスハイライトを有効化 (デフォルト: true)
+```
+入力差分テキスト
+       │
+       ▼
+┌─────────────────┐
+│ convertToUnified│  ◄── 様々な差分フォーマットを正規化
+│ Diff()          │
+└─────────────────┘
+       │
+       ▼
+┌─────────────────┐
+│ diff2html.html()│  ◄── シンタックスハイライト付きスタイル化HTML生成
+└─────────────────┘
+       │
+       ▼
+┌─────────────────┐
+│ generateDiffHtml│  ◄── 完全なHTMLドキュメント + スタイルでラップ
+│ ()              │
+└─────────────────┘
+       │
+       ├─────────────────────┬─────────────────────┐
+       ▼                     ▼                     ▼
+┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
+│ GitHub Gist     │   │ ローカルHTML    │   │ Playwright      │
+│ + HTMLプレビュー │   │ ファイル出力    │   │ スクリーンショット│
+└─────────────────┘   └─────────────────┘   └─────────────────┘
+                                                     │
+                                                     ▼
+                                              ┌─────────────────┐
+                                              │ PNGイメージ     │
+                                              │ 出力            │
+                                              └─────────────────┘
+```
 
-## 詳細設定オプション
+### GitHub Gist統合
 
-### 高度な環境変数
+#### 機能
+- **自動HTMLプレビュー**: 即座の表示のため`https://htmlpreview.github.io/`を使用
+- **複数ビューア**: GitHack、RawGitの代替手段を提供
+- **自動削除**: 設定可能な有効期限（1-1440分）
+- **カウントダウンタイマー**: HTML内でリアルタイム削除カウントダウン
+- **デフォルトでシークレット**: 安全で非公開のGist
 
-README.mdで説明した基本的な環境変数に加えて：
+#### 実装詳細
+```typescript
+// 有効期限通知付きGist作成
+const htmlWithExpiry = baseHtml
+  .replace('<body>', `<body><div id="expiry-notice">...</div>`)
+  .replace('</body>', `<script>/* カウントダウンタイマー */</script></body>`);
 
+// スケジュール削除
+setTimeout(() => deleteGist(gistId), expiryMinutes * 60 * 1000);
+```
+
+### ローカルファイル出力戦略
+
+#### ファイル管理
+- **固定ファイル名**: `diff-image.html` と `diff-image.png` でディスク肥大化を防止
+- **アトミック書き込み**: 自動表示前にファイル書き込み完了
+- **ディレクトリ作成**: `/output` ディレクトリの自動作成
+- **上書き戦略**: 最新の差分が前の出力を置き換え
+
+#### PNG生成プロセス
+```typescript
+// 高品質PNG生成
+const browser = await chromium.launch();
+const page = await browser.newPage({ 
+  viewport: { width: 1800, height: 1200 } 
+});
+await page.setContent(html);
+await page.screenshot({ path: filePath, fullPage: true, type: "png" });
+```
+
+## 🌍 プラットフォーム固有の実装
+
+### 自動表示メカニズム
+
+| プラットフォーム | プライマリコマンド | フォールバックコマンド | 備考 |
+|----------------|--------------------|----------------------|------|
+| **Windows** | `start "" "${filePath}"` | `explorer "${filePath}"` | Windows 11+推奨 |
+| **macOS** | `open "${filePath}"` | `osascript`経由のAppleScript | macOS Sequoia 15+推奨 |
+| **Linux** | `xdg-open "${filePath}"` | なし | GUI環境が必要 |
+
+#### Windows実装
+```typescript
+if (platform === 'win32') {
+  command = `start "" "${filePath}"`;
+  // フォールバック: exec(`explorer "${filePath}"`);
+}
+```
+
+#### macOS実装
+```typescript
+if (platform === 'darwin') {
+  command = outputType === 'html' 
+    ? `open "${openUrl}"` // キャッシュバスティングURLをサポート
+    : `open "${filePath}"`;
+  // フォールバック: FinderでAppleScript
+}
+```
+
+#### Linux実装
+```typescript
+if (platform !== 'win32' && platform !== 'darwin') {
+  command = `xdg-open "${filePath}"`;
+  // 注意: HTMLキャッシュバスティングは全てのデスクトップ環境で動作しない可能性
+}
+```
+
+**Linuxテスト状況**: 実装済みですが、Ubuntu/その他のディストリビューションで包括的なテストは未実施。適切に設定されたデフォルトアプリケーションを持つGUI環境で動作するはずです。
+
+## 🔧 高度な設定
+
+### 環境変数
+
+| 変数 | 型 | デフォルト | 説明 |
+|------|----|-----------|----- |
+| `GITHUB_TOKEN` | string | - | GitHub Gist機能に必要 |
+| `DEFAULT_AUTO_OPEN` | boolean | `false` | グローバル自動表示設定 |
+| `DEFAULT_OUTPUT_MODE` | string | `html` | デフォルト出力タイプ（`html` または `image`） |
+| `NODE_ENV` | string | - | `development` または `production` |
+| `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` | boolean | `false` | Chromiumダウンロードをスキップ |
+
+### 高度なClaude Desktop設定
+
+#### 開発モード（ホットリロード）
 ```json
 {
-  "env": {
-    "NODE_ENV": "production",
-    "DEFAULT_AUTO_OPEN": "true",
-    "DEFAULT_OUTPUT_MODE": "html",
-    "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "false"
+  "mcpServers": {
+    "unified-diff-mcp": {
+      "command": "bun",
+      "args": ["--watch", "/path/to/unified-diff-mcp/src/index.ts"],
+      "env": {
+        "NODE_ENV": "development",
+        "GITHUB_TOKEN": "your_token_here",
+        "DEFAULT_AUTO_OPEN": "true"
+      }
+    }
+  }
+}
+```
+
+#### 本番モード（安定版）
+```json
+{
+  "mcpServers": {
+    "unified-diff-mcp": {
+      "command": "bun",
+      "args": ["run", "/path/to/unified-diff-mcp/src/index.ts"],
+      "env": {
+        "NODE_ENV": "production",
+        "GITHUB_TOKEN": "your_token_here",
+        "DEFAULT_OUTPUT_MODE": "html"
+      }
+    }
   }
 }
 ```
 
 ### diff2html設定
 
-サーバーは様々なdiff2html設定オプションをサポート:
+#### サポート機能
+- **出力フォーマット**: 行毎、横並び比較
+- **シンタックスハイライト**: 140+言語（JavaScript、TypeScript、Python、Go、Rust等）
+- **レスポンシブデザイン**: CSSブレークポイント付きモバイル対応
+- **ファイル統計**: 色分けされた追加/削除カウント
+- **インタラクティブ機能**: 折りたたみ可能セクション、展開可能コンテキスト
 
-- **出力形式**: line-by-line、side-by-side
-- **シンタックスハイライト**: JavaScript、TypeScript、Python、Go、Rustなど140以上の言語をサポート
-- **レスポンシブデザイン**: ブレークポイント付きのモバイル対応レイアウト
-- **ファイル統計**: カラーコーディング付きの追加/削除数
-- **インタラクティブ機能**: 折りたたみ可能なセクション、展開可能なコンテキスト
-
-### プラットフォーム固有の実装詳細
-
-#### Windows自動オープン実装
-- プライマリ: `start \"\" \"${filePath}\"` コマンド
-- フォールバック: `explorer \"${filePath}\"` コマンド
-- HTMLファイル: デフォルトブラウザで開く
-- 画像ファイル: デフォルト画像ビューアで開く
-- **推奨**: 最適な互換性のためWindows 11以降
-
-#### macOS自動オープン実装
-- プライマリ: HTMLキャッシュ回避のURL対応付き `open \"${filePath}\"` コマンド
-- フォールバック: AppleScript経由 `osascript -e 'tell application \"Finder\" to open POSIX file \"${filePath}\"'`
-- クエリパラメータ付き `file://` URLの完全サポート
-- **推奨**: 最適な互換性のためmacOS Sequoia 15以降
-
-#### Linux自動オープン実装
-- プライマリ: `xdg-open \"${filePath}\"` コマンド
-- 要求: `xdg-utils` パッケージ（通常はプリインストール済み）
-- 注意: すべてのデスクトップ環境でHTMLキャッシュ回避が動作しない場合があります
-
-**動作検証状況**: Linux自動オープン機能は実装されていますが、Ubuntuやその他のLinuxディストリビューションでの包括的なテストは実施されていません。適切に設定されたデフォルトアプリケーションを持つGUI環境では動作するはずですが、ご自身の責任でご使用ください。様々なLinuxディストリビューションでテストされた方からのフィードバックをお待ちしています。
-
-## アーキテクチャ詳細
-
-### 差分処理パイプライン
-
-```
-差分テキスト入力
-       │
-       ▼
-┌─────────────────┐
-│ convertToUnified│  ◄── 様々な差分形式を処理
-│ Diff()          │
-└─────────────────┘
-       │
-       ▼
-┌─────────────────┐
-│ diff2html.html()│  ◄── スタイル付きHTMLを生成
-└─────────────────┘
-       │
-       ▼
-┌─────────────────┐
-│ generateDiffHtml│  ◄── 完全なHTMLドキュメントでラップ
-│ ()              │
-└─────────────────┘
-       │
-       ▼
-┌─────────────────┐    ┌─────────────────┐
-│ HTML出力        │    │ Playwright      │
-│ (ブラウザ)      │    │ スクリーンショット│
-└─────────────────┘    └─────────────────┘
-                              │
-                              ▼
-                       ┌─────────────────┐
-                       │ PNG出力         │
-                       │ (画像ビューア)  │
-                       └─────────────────┘
+#### カスタマイゼーションオプション
+```typescript
+const diffHtml = diff2htmlHtml(unifiedDiff, {
+  outputFormat: 'side-by-side',
+  drawFileList: true,
+  matching: 'lines',
+  renderNothingWhenEmpty: false,
+  maxLineSizeInBlockForComparison: 200,
+  maxLineLengthHighlight: 10000
+});
 ```
 
-### ファイル出力戦略
+## 🔄 典型的なワークフロー
 
-- **固定ファイル名**: ディスク容量肥大を防ぐため `diff-image.html` と `diff-image.png`
-- **アトミック書き込み**: ファイルが完全に書き込まれてから開かれる
-- **ディレクトリ作成**: 出力ディレクトリが存在しない場合は自動作成
-- **エラーハンドリング**: ファイル操作の堅牢なフォールバック機構
+### Claude Desktop統合
 
-## 使用パターンとベストプラクティス
+#### 基本的な差分レビューワークフロー
+1. **ユーザーリクエスト**: 「適用前に変更内容を表示して」
+2. **Claude**: filesystem MCP `edit_file` を `dryRun=true` で使用
+3. **可視化**: `visualize_diff_html_content` がGitHub Gistを作成
+4. **レビュー**: ユーザーがブラウザで美しい差分を確認
+5. **決定**: ユーザーが承認または修正を要求
+6. **実行**: filesystem MCP `edit_file` をdryRunなしで実行
 
-### 典型的なClaude Desktopワークフロー
-
-1. **ユーザーリクエスト**: 「ファイルYの関数Xを修正」
-2. **Claudeアクション**: filesystem MCP `edit_file` with `dryRun=true`
-3. **差分生成**: unified-diff-mcp `parse_filesystem_diff_image`
-4. **ユーザーレビュー**: 視覚的差分が自動的に開く
-5. **確認**: ユーザーが承認または変更を要求
-6. **実行**: filesystem MCP `edit_file` without dryRun
+#### ドキュメント化ワークフロー
+1. **ユーザーリクエスト**: 「この差分をドキュメント用に保存して」
+2. **Claude**: `visualize_diff_output_file` を `outputType=image` で使用
+3. **出力**: 高品質PNG が `/output/diff-image.png` に保存
+4. **使用**: 画像をドキュメント、プレゼンテーション等に埋め込み
 
 ### 他のMCPサーバーとの統合
 
 #### 推奨MCPスタック
-- **@modelcontextprotocol/server-filesystem**: コアファイル操作
-- **unified-diff-mcp**: 差分視覚化（本プロジェクト）
-- **@modelcontextprotocol/server-git**: Git操作（オプション）
-
-#### Git統合を含む高度なワークフロー
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/project"]
+    },
+    "unified-diff-mcp": {
+      "command": "bun",
+      "args": ["run", "/path/to/unified-diff-mcp/src/index.ts"]
+    },
+    "git": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-git", "/path/to/project"]
+    }
+  }
+}
 ```
-ユーザーリクエスト → filesystem dryRun → unified-diff視覚化 → 
-ユーザー承認 → filesystem edit → git diff → git commit
+
+#### 高度なGit + 差分ワークフロー
+```
+ユーザーリクエスト → filesystem dryRun → unified-diff可視化 → 
+ユーザー承認 → filesystem編集 → git diff → unified-diff最終 → git commit
 ```
 
-### パフォーマンス考慮事項
+## 🐛 トラブルシューティング
 
-- **HTML生成**: 典型的な差分で約50-200ms
-- **PNG生成**: 約1-3秒（Chromium起動を含む）
-- **メモリ使用量**: PNG生成中約100-300MB（Chromiumオーバーヘッド）
-- **ディスク容量**: 固定ファイル名により出力ファイルの蓄積を防止
+### よくある問題
 
-### 一般的なコマンドと使用例
+#### "Bun command not found"
+**症状**: Claude DesktopがBunを実行できない
+**解決方法**:
+- **macOS**: `BUN_PATH=$(which bun) && sudo ln -sf $BUN_PATH /usr/local/bin/bun`
+- **代替案**: 設定でフルパスを使用: `"command": "/Users/username/.bun/bin/bun"`
+- **一般**: Bunインストール後にターミナルを再起動
 
-#### 基本的な差分レビュー
-- 「適用前に変更内容を見せて」
-- 「修正の視覚的差分を生成して」
-- 「進める前に差分画像が欲しい」
+#### "GitHub Gist creation failed"
+**症状**: `visualize_diff_html_content` が失敗
+**解決方法**:
+- `GITHUB_TOKEN` が設定され有効であることを確認
+- トークンが `gist` スコープ権限を持つことを確認
+- トークンをテスト: `curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user`
 
-#### 形式固有のリクエスト
-- 「シンタックスハイライト付きのサイドバイサイド差分を表示」
-- 「行単位の差分表示を生成」
-- 「変更のPNG画像を作成」
+#### "Auto-open not working"
+**症状**: ファイルは生成されるが自動表示されない
+**解決方法**:
+- `DEFAULT_AUTO_OPEN=true` または `autoOpen=true` パラメータを確認
+- **Windows**: HTML/PNGファイル用のデフォルトプログラムが設定されていることを確認
+- **macOS**: システム設定 → 一般 → デフォルトWebブラウザを確認
+- **Linux**: `xdg-utils` パッケージをインストール: `sudo apt install xdg-utils`
 
-#### 安全優先ワークフロー
-- 「変更前に常に差分を表示」
-- 「視覚的確認付きの安全編集モードを有効化」
-- 「すべてのファイル修正を事前レビュー」
-
-## トラブルシューティング
-
-### 一般的な問題と解決策
-
-#### 「Bunコマンドが見つからない」
-- **Mac解決策**: Claude Desktop用のシンボリックリンクを作成: `BUN_PATH=$(which bun) && sudo ln -sf $BUN_PATH /usr/local/bin/bun`
-- **代替案**: 設定で `which bun` のフルパスを使用
-- **一般的**: Bunインストール後にターミナルを再起動
-
-#### 「自動オープンが動作しない」
-- `DEFAULT_AUTO_OPEN=true` が設定されているか確認
-- プラットフォーム固有のコマンドが利用可能か確認
-- Linux: `xdg-utils` がインストールされているか確認
-
-#### 「PNG生成が失敗する」
-- PlaywrightがChromiumをダウンロードする必要がある場合あり
-- 利用可能なディスク容量を確認（1GB以上推奨）
-- 競合するブラウザプロセスがないか確認
-
-#### 「HTMLが正しく表示されない」
-- CDNリソースのインターネット接続を確認
-- HTMLファイルが破損していないか確認
-- ブラウザで手動で開いてみる
+#### "PNG generation fails"
+**症状**: HTMLは動作するが画像出力が失敗
+**解決方法**:
+- Playwrightが初回実行時にChromiumをダウンロードする必要がある可能性
+- 利用可能ディスク容量を確認（1GB以上推奨）
+- 競合するブラウザプロセスがないことを確認
+- 試行: `bunx playwright install chromium`
 
 ### デバッグモード
 
-トラブルシューティングのため、詳細ログを有効化できます：
+トラブルシューティング用の詳細ログを有効化:
 
 ```json
 {
@@ -228,27 +328,52 @@ README.mdで説明した基本的な環境変数に加えて：
 }
 ```
 
-これにより以下の詳細ログが提供されます：
-- ファイル操作
+**デバッグ出力に含まれるもの**:
+- ファイル操作詳細
 - 差分処理ステップ
-- 自動オープン試行
+- 自動表示コマンド実行
+- GitHub API相互作用
 - エラースタックトレース
 
-## セキュリティ考慮事項
+## 🔒 セキュリティ考慮事項
 
 ### ファイルアクセス
-- サーバーは設定されたプロジェクトディレクトリのみにアクセス
-- 指定されたパス外のファイルにアクセスする能力なし
-- すべてのファイル操作がログ記録される
+- サーバーは設定されたプロジェクトディレクトリ内でのみ動作
+- 指定パス外のファイルへのアクセスは不可
+- 全てのファイル操作はデバッグモードでログ記録
 
 ### ネットワークアクセス
-- diff2html CSS/JSのCDNリソースのみにアクセス
-- 外部API呼び出しやデータ送信なし
-- すべての処理がローカルで実行
+- GitHub API呼び出し（Gist機能のみ）
+- diff2html CSS/JS用CDNリソース
+- その他の外部API呼び出しやデータ送信なし
+- 全ての差分処理はローカルで実行
 
 ### プロセス分離
-- PNG生成のためChromiumがサンドボックスモードで実行
-- 永続的なブラウザ状態やクッキーなし
-- 一時ファイルは自動的にクリーンアップ
+- PNG生成時のChromiumはサンドボックスモードで実行
+- 永続的なブラウザ状態、Cookie、ローカルストレージなし
+- 一時ファイルは自動クリーンアップ
+- GitHub Gistは指定時間後に自動削除
 
-この詳細ガイドは、メインREADMEドキュメントに含まれていない実装詳細、トラブルシューティング、ベストプラクティスをカバーしています。
+### GitHub Token セキュリティ
+- トークンは `gist` スコープのみ必要（最小権限）
+- ローカル環境変数にのみ保存
+- GitHub API以外への送信なし
+- GitHub設定からいつでも取り消し可能
+
+## 📊 パフォーマンス特性
+
+### 典型的なパフォーマンス
+- **HTML生成**: 標準差分で50-200ms
+- **PNG生成**: 1-3秒（Chromium起動時間を含む）
+- **GitHub Gist作成**: 500-2000ms（ネットワーク依存）
+- **メモリ使用量**: PNG生成時100-300MB（Chromiumオーバーヘッド）
+
+### 最適化のヒント
+- より高速な生成には `outputType=html` を使用
+- 一貫したパフォーマンスのため `DEFAULT_OUTPUT_MODE=html` に設定
+- 実際の使用パターンに基づいて `expiryMinutes` を検討
+- より良いセキュリティのため `public=false`（デフォルト）を使用
+
+---
+
+この高度なガイドは、パワーユーザーおよび開発者向けの全ての技術実装詳細、トラブルシューティングシナリオ、統合パターンをカバーしています。

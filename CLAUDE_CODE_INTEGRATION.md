@@ -1,105 +1,57 @@
-# Claude Desktop & Code MCP Integration - Advanced Guide
+# Advanced Integration Guide
 
-This document provides detailed information not covered in the main README.md.
+This document provides detailed technical information for advanced users and developers.
 
-## MCP Tool Specifications
+## 🛠️ Current Tool Specifications
 
-### HTML Visualization Tools
+### Available Tools (v1.0+)
 
-#### `visualize_diff`
+| Tool | Purpose | Output | Best For |
+|------|---------|--------|----------|
+| **`visualize_diff_html_content`** | GitHub Gist + Browser display | GitHub Gist URL + HTML Preview | Sharing, instant viewing |
+| **`visualize_diff_output_file`** | Local file storage | Local PNG/HTML files | Documentation, presentations |
 
-Generate HTML visualization of unified diff using diff2html.
+### Detailed Parameter Reference
 
-**Parameters:**
-- `diff` (string, required): Unified diff text or filesystem edit_file dry-run output
-- `format` (string, optional): Output format - 'line-by-line' or 'side-by-side' (default: 'side-by-side')
-- `showFileList` (boolean, optional): Show file list summary (default: true)
-- `highlight` (boolean, optional): Enable syntax highlighting (default: true)
-- `oldPath` (string, optional): Path of the original file
-- `newPath` (string, optional): Path of the modified file
+#### `visualize_diff_html_content`
 
-#### `parse_filesystem_diff`
+**Purpose**: Creates temporary GitHub Gist with beautiful HTML diff visualization
 
-Parse filesystem edit_file dry-run output and generate HTML diff.
+**Parameters**:
+- **`diff`** (string, required): Unified diff text or filesystem edit_file dry-run output
+- **`format`** (string): `'line-by-line'` or `'side-by-side'` (default: `'side-by-side'`)
+- **`showFileList`** (boolean): Show file list summary (default: `true`)
+- **`highlight`** (boolean): Enable syntax highlighting (default: `true`)
+- **`oldPath`** (string): Original file path for context display
+- **`newPath`** (string): Modified file path for context display
+- **`autoOpen`** (boolean): Auto-open HTML preview in browser (default: `false`)
+- **`expiryMinutes`** (number): Auto-delete time, 1-1440 minutes (default: `30`)
+- **`public`** (boolean): Create public gist vs secret gist (default: `false`)
 
-**Parameters:**
-- `dryRunOutput` (string, required): Output from filesystem edit_file with dryRun=true
-- `format` (string, optional): Output format - 'line-by-line' or 'side-by-side' (default: 'side-by-side')
-- `highlight` (boolean, optional): Enable syntax highlighting (default: true)
+**Output**:
+- GitHub Gist URL with HTML preview
+- Raw HTML content (for fallback)
+- Multiple viewer options (HTMLPreview, GitHack, etc.)
 
-### Visualization Tools
+#### `visualize_diff_output_file`
 
-#### `visualize_diff_image`
+**Purpose**: Generates diff visualization and saves to local output directory
 
-Generate HTML or image visualization of unified diff.
+**Parameters**:
+- **`diff`** (string, required): Unified diff text or filesystem edit_file dry-run output
+- **`format`** (string): `'line-by-line'` or `'side-by-side'` (default: `'side-by-side'`)
+- **`showFileList`** (boolean): Show file list summary (default: `true`)
+- **`highlight`** (boolean): Enable syntax highlighting (default: `true`)
+- **`oldPath`** (string): Original file path for context display
+- **`newPath`** (string): Modified file path for context display
+- **`autoOpen`** (boolean): Auto-open generated file (default: from `DEFAULT_AUTO_OPEN`)
+- **`outputType`** (string): `'html'` or `'image'` (default: from `DEFAULT_OUTPUT_MODE`)
 
-**Parameters:**
-- `diff` (string, required): Unified diff text or filesystem edit_file dry-run output
-- `format` (string, optional): Output format - 'line-by-line' or 'side-by-side' (default: 'side-by-side')
-- `showFileList` (boolean, optional): Show file list summary (default: true)
-- `highlight` (boolean, optional): Enable syntax highlighting (default: true)
-- `oldPath` (string, optional): Path of the original file
-- `newPath` (string, optional): Path of the modified file
+**Output**:
+- Local file: `/path/to/project/output/diff-image.html` or `.png`
+- Fixed filename prevents disk space bloat
 
-#### `parse_filesystem_diff_image`
-
-Parse filesystem edit_file dry-run output and generate HTML or image diff.
-
-**Parameters:**
-- `dryRunOutput` (string, required): Output from filesystem edit_file with dryRun=true
-- `format` (string, optional): Output format - 'line-by-line' or 'side-by-side' (default: 'side-by-side')  
-- `highlight` (boolean, optional): Enable syntax highlighting (default: true)
-
-## Detailed Configuration Options
-
-### Advanced Environment Variables
-
-Beyond the basic environment variables mentioned in README.md:
-
-```json
-{
-  "env": {
-    "NODE_ENV": "production",
-    "DEFAULT_AUTO_OPEN": "true",
-    "DEFAULT_OUTPUT_MODE": "html",
-    "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "false"
-  }
-}
-```
-
-### diff2html Configuration
-
-The server supports various diff2html configuration options:
-
-- **Output Formats**: line-by-line, side-by-side
-- **Syntax Highlighting**: 140+ languages supported including JavaScript, TypeScript, Python, Go, Rust, etc.
-- **Responsive Design**: Mobile-friendly layouts with breakpoints
-- **File Statistics**: Addition/deletion counts with color coding
-- **Interactive Features**: Collapsible sections, expandable context
-
-### Platform-specific Implementation Details
-
-#### Windows Auto-Open Implementation
-- Primary: `start \"\" \"${filePath}\"` command
-- Fallback: `explorer \"${filePath}\"` command
-- HTML files: Opens with default browser
-- Image files: Opens with default image viewer
-- **Recommended**: Windows 11 or later for optimal compatibility
-
-#### macOS Auto-Open Implementation
-- Primary: `open \"${filePath}\"` command with URL support for HTML cache-busting
-- Fallback: AppleScript via `osascript -e 'tell application \"Finder\" to open POSIX file \"${filePath}\"'`
-- Full support for `file://` URLs with query parameters
-- **Recommended**: macOS Sequoia 15 or later for optimal compatibility
-
-#### Linux Auto-Open Implementation
-- Primary: `xdg-open \"${filePath}\"` command
-- Requires: `xdg-utils` package (usually pre-installed)
-- Note: HTML cache-busting may not work on all desktop environments
-
-**Testing Status**: The Linux auto-open functionality has been implemented but not comprehensively tested on Ubuntu or other Linux distributions. While it should work in GUI environments with properly configured default applications, please use at your own discretion. We welcome feedback from users who test this on various Linux distributions.
-
-## Architecture Details
+## 🏗️ Architecture Details
 
 ### Diff Processing Pipeline
 
@@ -108,116 +60,264 @@ Input Diff Text
        │
        ▼
 ┌─────────────────┐
-│ convertToUnified│  ◄── Handles various diff formats
+│ convertToUnified│  ◄── Normalize various diff formats
 │ Diff()          │
 └─────────────────┘
        │
        ▼
 ┌─────────────────┐
-│ diff2html.html()│  ◄── Generates styled HTML
+│ diff2html.html()│  ◄── Generate styled HTML with syntax highlighting
 └─────────────────┘
        │
        ▼
 ┌─────────────────┐
-│ generateDiffHtml│  ◄── Wraps in complete HTML document
+│ generateDiffHtml│  ◄── Wrap in complete HTML document + styles
 │ ()              │
 └─────────────────┘
        │
-       ▼
-┌─────────────────┐    ┌─────────────────┐
-│ HTML Output     │    │ Playwright      │
-│ (Browser)       │    │ Screenshot      │
-└─────────────────┘    └─────────────────┘
-                              │
-                              ▼
-                       ┌─────────────────┐
-                       │ PNG Output      │
-                       │ (Image Viewer)  │
-                       └─────────────────┘
+       ├─────────────────────┬─────────────────────┐
+       ▼                     ▼                     ▼
+┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
+│ GitHub Gist     │   │ Local HTML      │   │ Playwright      │
+│ + HTML Preview  │   │ File Output     │   │ Screenshot      │
+└─────────────────┘   └─────────────────┘   └─────────────────┘
+                                                     │
+                                                     ▼
+                                              ┌─────────────────┐
+                                              │ PNG Image       │
+                                              │ Output          │
+                                              └─────────────────┘
 ```
 
-### File Output Strategy
+### GitHub Gist Integration
 
-- **Fixed Filenames**: `diff-image.html` and `diff-image.png` to prevent disk bloat
-- **Atomic Writes**: Files are written completely before being opened
-- **Directory Creation**: Output directory is created automatically if it doesn't exist
-- **Error Handling**: Robust fallback mechanisms for file operations
+#### Features
+- **Automatic HTML Preview**: Uses `https://htmlpreview.github.io/` for instant viewing
+- **Multiple Viewers**: GitHack, RawGit alternatives provided
+- **Auto-deletion**: Configurable expiry (1-1440 minutes)
+- **Countdown Timer**: Real-time deletion countdown in HTML
+- **Secret by Default**: Secure, unlisted gists
 
-## Usage Patterns and Best Practices
+#### Implementation Details
+```typescript
+// Gist creation with expiry notice
+const htmlWithExpiry = baseHtml
+  .replace('<body>', `<body><div id="expiry-notice">...</div>`)
+  .replace('</body>', `<script>/* countdown timer */</script></body>`);
 
-### Typical Claude Desktop Workflow
+// Scheduled deletion
+setTimeout(() => deleteGist(gistId), expiryMinutes * 60 * 1000);
+```
 
-1. **User Request**: \"Modify function X in file Y\"
-2. **Claude Action**: filesystem MCP `edit_file` with `dryRun=true`
-3. **Diff Generation**: unified-diff-mcp `parse_filesystem_diff_image`
-4. **User Review**: Visual diff automatically opens
-5. **Confirmation**: User approves or requests changes
+### Local File Output Strategy
+
+#### File Management
+- **Fixed Filenames**: `diff-image.html` and `diff-image.png` prevent disk bloat
+- **Atomic Writes**: Complete file write before auto-open
+- **Directory Creation**: Automatic `/output` directory creation
+- **Overwrite Strategy**: Latest diff replaces previous output
+
+#### PNG Generation Process
+```typescript
+// High-quality PNG generation
+const browser = await chromium.launch();
+const page = await browser.newPage({ 
+  viewport: { width: 1800, height: 1200 } 
+});
+await page.setContent(html);
+await page.screenshot({ path: filePath, fullPage: true, type: "png" });
+```
+
+## 🌍 Platform-Specific Implementation
+
+### Auto-Open Mechanisms
+
+| Platform | Primary Command | Fallback Command | Notes |
+|----------|----------------|------------------|-------|
+| **Windows** | `start "" "${filePath}"` | `explorer "${filePath}"` | Windows 11+ recommended |
+| **macOS** | `open "${filePath}"` | AppleScript via `osascript` | macOS Sequoia 15+ recommended |
+| **Linux** | `xdg-open "${filePath}"` | None | Requires GUI environment |
+
+#### Windows Implementation
+```typescript
+if (platform === 'win32') {
+  command = `start "" "${filePath}"`;
+  // Fallback: exec(`explorer "${filePath}"`);
+}
+```
+
+#### macOS Implementation
+```typescript
+if (platform === 'darwin') {
+  command = outputType === 'html' 
+    ? `open "${openUrl}"` // Supports cache-busting URLs
+    : `open "${filePath}"`;
+  // Fallback: AppleScript with Finder
+}
+```
+
+#### Linux Implementation
+```typescript
+if (platform !== 'win32' && platform !== 'darwin') {
+  command = `xdg-open "${filePath}"`;
+  // Note: HTML cache-busting may not work on all desktop environments
+}
+```
+
+**Linux Testing Status**: Implemented but not comprehensively tested on Ubuntu/other distributions. Should work in GUI environments with properly configured default applications.
+
+## 🔧 Advanced Configuration
+
+### Environment Variables
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `GITHUB_TOKEN` | string | - | Required for GitHub Gist functionality |
+| `DEFAULT_AUTO_OPEN` | boolean | `false` | Global auto-open setting |
+| `DEFAULT_OUTPUT_MODE` | string | `html` | Default output type (`html` or `image`) |
+| `NODE_ENV` | string | - | `development` or `production` |
+| `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` | boolean | `false` | Skip Chromium download |
+
+### Advanced Claude Desktop Configuration
+
+#### Development Mode (Hot Reload)
+```json
+{
+  "mcpServers": {
+    "unified-diff-mcp": {
+      "command": "bun",
+      "args": ["--watch", "/path/to/unified-diff-mcp/src/index.ts"],
+      "env": {
+        "NODE_ENV": "development",
+        "GITHUB_TOKEN": "your_token_here",
+        "DEFAULT_AUTO_OPEN": "true"
+      }
+    }
+  }
+}
+```
+
+#### Production Mode (Stable)
+```json
+{
+  "mcpServers": {
+    "unified-diff-mcp": {
+      "command": "bun",
+      "args": ["run", "/path/to/unified-diff-mcp/src/index.ts"],
+      "env": {
+        "NODE_ENV": "production",
+        "GITHUB_TOKEN": "your_token_here",
+        "DEFAULT_OUTPUT_MODE": "html"
+      }
+    }
+  }
+}
+```
+
+### diff2html Configuration
+
+#### Supported Features
+- **Output Formats**: Line-by-line, side-by-side comparison
+- **Syntax Highlighting**: 140+ languages (JavaScript, TypeScript, Python, Go, Rust, etc.)
+- **Responsive Design**: Mobile-friendly with CSS breakpoints
+- **File Statistics**: Addition/deletion counts with color coding
+- **Interactive Features**: Collapsible sections, expandable context
+
+#### Customization Options
+```typescript
+const diffHtml = diff2htmlHtml(unifiedDiff, {
+  outputFormat: 'side-by-side',
+  drawFileList: true,
+  matching: 'lines',
+  renderNothingWhenEmpty: false,
+  maxLineSizeInBlockForComparison: 200,
+  maxLineLengthHighlight: 10000
+});
+```
+
+## 🔄 Typical Workflows
+
+### Claude Desktop Integration
+
+#### Basic Diff Review Workflow
+1. **User Request**: "Show me the changes before applying"
+2. **Claude**: Uses filesystem MCP `edit_file` with `dryRun=true`
+3. **Visualization**: `visualize_diff_html_content` creates GitHub Gist
+4. **Review**: User views beautiful diff in browser
+5. **Decision**: User approves or requests modifications
 6. **Execution**: filesystem MCP `edit_file` without dryRun
+
+#### Documentation Workflow
+1. **User Request**: "Save this diff for documentation"
+2. **Claude**: Uses `visualize_diff_output_file` with `outputType=image`
+3. **Output**: High-quality PNG saved to `/output/diff-image.png`
+4. **Usage**: Image embedded in documentation, presentations, etc.
 
 ### Integration with Other MCP Servers
 
 #### Recommended MCP Stack
-- **@modelcontextprotocol/server-filesystem**: Core file operations
-- **unified-diff-mcp**: Diff visualization (this project)
-- **@modelcontextprotocol/server-git**: Git operations (optional)
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/project"]
+    },
+    "unified-diff-mcp": {
+      "command": "bun",
+      "args": ["run", "/path/to/unified-diff-mcp/src/index.ts"]
+    },
+    "git": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-git", "/path/to/project"]
+    }
+  }
+}
+```
 
-#### Advanced Workflow with Git Integration
+#### Advanced Git + Diff Workflow
 ```
 User Request → filesystem dryRun → unified-diff visualization → 
-User Approval → filesystem edit → git diff → git commit
+User Approval → filesystem edit → git diff → unified-diff final → git commit
 ```
 
-### Performance Considerations
+## 🐛 Troubleshooting
 
-- **HTML Generation**: ~50-200ms for typical diffs
-- **PNG Generation**: ~1-3 seconds (includes Chromium startup)
-- **Memory Usage**: ~100-300MB during PNG generation (Chromium overhead)
-- **Disk Space**: Fixed filenames prevent accumulation of output files
+### Common Issues
 
-### Common Commands and Use Cases
-
-#### Basic Diff Review
-- \"Show me the changes before applying\"
-- \"Generate a visual diff of the modifications\"
-- \"I want to see the diff image before proceeding\"
-
-#### Format-Specific Requests
-- \"Show side-by-side diff with syntax highlighting\"
-- \"Generate line-by-line diff view\"
-- \"Create PNG image of the changes\"
-
-#### Safety-First Workflow
-- \"Always show me diffs before making changes\"
-- \"Enable safe editing mode with visual confirmation\"
-- \"Pre-review all file modifications\"
-
-## Troubleshooting
-
-### Common Issues and Solutions
-
-#### \"Bun command not found\"
-- **Mac Solution**: Create symlink for Claude Desktop: `BUN_PATH=$(which bun) && sudo ln -sf $BUN_PATH /usr/local/bin/bun`
-- **Alternative**: Use full path from `which bun` in configuration
+#### "Bun command not found"
+**Symptoms**: Claude Desktop can't execute bun
+**Solutions**:
+- **macOS**: `BUN_PATH=$(which bun) && sudo ln -sf $BUN_PATH /usr/local/bin/bun`
+- **Alternative**: Use full path in config: `"command": "/Users/username/.bun/bin/bun"`
 - **General**: Restart terminal after Bun installation
 
-#### \"Auto-open not working\"
-- Check `DEFAULT_AUTO_OPEN=true` is set
-- Verify platform-specific commands are available
-- On Linux: Ensure `xdg-utils` is installed
+#### "GitHub Gist creation failed"
+**Symptoms**: `visualize_diff_html_content` fails
+**Solutions**:
+- Verify `GITHUB_TOKEN` is set and valid
+- Check token has `gist` scope permissions
+- Test token: `curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user`
 
-#### \"PNG generation fails\"
-- Playwright may need to download Chromium
+#### "Auto-open not working"
+**Symptoms**: Files generate but don't open automatically
+**Solutions**:
+- Verify `DEFAULT_AUTO_OPEN=true` or `autoOpen=true` parameter
+- **Windows**: Ensure default programs are set for HTML/PNG files
+- **macOS**: Check System Preferences → General → Default web browser
+- **Linux**: Install `xdg-utils` package: `sudo apt install xdg-utils`
+
+#### "PNG generation fails"
+**Symptoms**: HTML works but image output fails
+**Solutions**:
+- Playwright may need to download Chromium on first run
 - Check available disk space (>1GB recommended)
 - Verify no conflicting browser processes
-
-#### \"HTML not displaying correctly\"
-- Check internet connection for CDN resources
-- Verify HTML file is not corrupted
-- Try opening manually in browser
+- Try: `bunx playwright install chromium`
 
 ### Debug Mode
 
-For troubleshooting, you can enable verbose logging:
+Enable verbose logging for troubleshooting:
 
 ```json
 {
@@ -228,27 +328,52 @@ For troubleshooting, you can enable verbose logging:
 }
 ```
 
-This provides detailed logs about:
-- File operations
+**Debug Output Includes**:
+- File operation details
 - Diff processing steps
-- Auto-open attempts
+- Auto-open command execution
+- GitHub API interactions
 - Error stack traces
 
-## Security Considerations
+## 🔒 Security Considerations
 
 ### File Access
-- Server only accesses the configured project directory
+- Server operates within configured project directory only
 - No ability to access files outside specified paths
-- All file operations are logged
+- All file operations are logged in debug mode
 
 ### Network Access
-- Only accesses CDN resources for diff2html CSS/JS
-- No external API calls or data transmission
-- All processing happens locally
+- GitHub API calls (only for Gist functionality)
+- CDN resources for diff2html CSS/JS
+- No other external API calls or data transmission
+- All diff processing happens locally
 
 ### Process Isolation
 - Chromium runs in sandboxed mode for PNG generation
-- No persistent browser state or cookies
-- Temporary files are cleaned up automatically
+- No persistent browser state, cookies, or local storage
+- Temporary files cleaned up automatically
+- GitHub Gists auto-delete after specified time
 
-This advanced guide covers implementation details, troubleshooting, and best practices not included in the main README documentation.
+### GitHub Token Security
+- Token only needs `gist` scope (minimal permissions)
+- Stored only in local environment variables
+- Never transmitted except to GitHub API
+- Can be revoked anytime from GitHub settings
+
+## 📊 Performance Characteristics
+
+### Typical Performance
+- **HTML Generation**: 50-200ms for standard diffs
+- **PNG Generation**: 1-3 seconds (includes Chromium startup)
+- **GitHub Gist Creation**: 500-2000ms (network dependent)
+- **Memory Usage**: 100-300MB during PNG generation (Chromium overhead)
+
+### Optimization Tips
+- Use `outputType=html` for faster generation
+- Set `DEFAULT_OUTPUT_MODE=html` for consistent performance
+- Consider `expiryMinutes` based on actual usage patterns
+- Use `public=false` (default) for better security
+
+---
+
+This advanced guide covers all technical implementation details, troubleshooting scenarios, and integration patterns for power users and developers.

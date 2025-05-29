@@ -2,176 +2,191 @@
 
 [![smithery badge](https://smithery.ai/badge/@gorosun/unified-diff-mcp)](https://smithery.ai/server/@gorosun/unified-diff-mcp)
 
-A Model Context Protocol (MCP) server for visualizing unified diffs using diff2html. Designed to work seamlessly with filesystem edit_file dry-run output.
+Beautiful diff visualization for Claude Desktop. Transform code diffs into stunning visual comparisons with GitHub Gist integration and local file output.
 
 <img src="examples/screenshot.png" alt="Unified Diff Visualization Screenshot" width="800" style="max-width: 100%; height: auto;">
 
-## Features
+## ✨ Features
 
-- Beautiful HTML diff visualization using diff2html
-- High-quality PNG image generation via Playwright + Chromium
-- High-performance processing with Bun runtime
-- Seamless integration with filesystem MCP dry-run output
-- Fixed filename output (diff-image.html/png) for disk space efficiency
-- Browser cache-busting with timestamp query parameters
+- 🎨 **Beautiful HTML diff visualization** using diff2html
+- 🌐 **GitHub Gist integration** for instant sharing
+- 📁 **Local file output** (PNG/HTML) 
+- 🔄 **Auto-delete functionality** for temporary diffs
+- 🖥️ **Cross-platform support** (Windows, macOS, Linux)
+- ⚡ **High-performance** with Bun runtime
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Installing via Smithery
-
-To install Unified Diff Visualizer for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@gorosun/unified-diff-mcp):
 
 ```bash
 bunx @smithery/cli install @gorosun/unified-diff-mcp --client claude
 ```
 
-### 1. Install Claude Desktop
+### Manual Installation
 
-Download and install platform-specific installer from [https://claude.ai/download](https://claude.ai/download)
+1. **Install [Claude Desktop](https://claude.ai/download)** and **[Bun](https://bun.sh)**
+2. **Clone and build:**
+   ```bash
+   git clone https://github.com/gorosun/unified-diff-mcp.git
+   cd unified-diff-mcp
+   bun install
+   ```
+3. **Configure Claude Desktop** - see [Configuration](#configuration) below
 
-### 2. Install Bun Runtime
+## 🛠️ Tools Overview
 
-**Mac / Linux:**
-```bash
-$ curl -fsSL https://bun.sh/install | bash
+| Tool | Purpose | Output | Best For |
+|------|---------|--------|----------|
+| **`visualize_diff_html_content`** | Browser display & sharing | GitHub Gist + HTML preview URL | Quick sharing, instant viewing |
+| **`visualize_diff_output_file`** | Local file storage | PNG/HTML files | Local storage, presentations |
+
+## 📖 Usage Examples
+
+### Share diff instantly (GitHub Gist)
+```
+visualize_diff_html_content:
+- Creates temporary GitHub Gist
+- Auto-deletes after 30 minutes
+- Instant browser-ready URLs
+- Perfect for code reviews
 ```
 
-**Windows:**
-```powershell
-$ powershell -c "irm bun.sh/install.ps1 | iex"
+### Save diff locally
+```
+visualize_diff_output_file:
+- Saves PNG or HTML to local disk
+- Auto-opens in browser (optional)
+- Perfect for documentation
 ```
 
-**Verify Installation:**
-```bash
-$ bun --version
-```
-
-**Mac: Enable bun for Claude Desktop:**
-```bash
-$ BUN_PATH=$(which bun) && sudo ln -sf $BUN_PATH /usr/local/bin/bun
-```
-
-**Note:** If `bun` command is not found, restart your terminal or use the full path returned by `which bun` in your configuration.
-
-### 3. Install and Build Project
-
-```bash
-# Install dependencies
-bun install
-```
-
-### 4. Configure Claude Desktop
-
-Choose your platform and language configuration:
-
-**macOS:**
-- **English**: [examples/config/macos/en/claude_desktop_config.json](examples/config/macos/en/claude_desktop_config.json)
-- **日本語**: [examples/config/macos/jp/claude_desktop_config.json](examples/config/macos/jp/claude_desktop_config.json)
-
-**Windows:**
-- **English**: [examples/config/windows/en/claude_desktop_config.json](examples/config/windows/en/claude_desktop_config.json)
-- **日本語**: [examples/config/windows/jp/claude_desktop_config.json](examples/config/windows/jp/claude_desktop_config.json)
-
-Copy the configuration to your Claude Desktop config file:
-
-**macOS:**
-```bash
-$ code ~/Library/Application\ Support/Claude/claude_desktop_config.json
-```
-
-**Windows:**
-```bash
-$ code %APPDATA%\Claude\claude_desktop_config.json
-```
-
-## Configuration
+## 🎛️ Configuration
 
 ### Environment Variables
 
-Both configurations support the following environment variables:
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `GITHUB_TOKEN` | GitHub Personal Access Token (for Gist integration) | Required for `visualize_diff_html_content` |
+| `DEFAULT_AUTO_OPEN` | Auto-open generated files | `false` |
+| `DEFAULT_OUTPUT_MODE` | Default output format (`html` or `image`) | `html` |
 
-- `DEFAULT_AUTO_OPEN`: Set to "true" to automatically open generated diff files
-- `DEFAULT_OUTPUT_MODE`: Set to "html" or "image" for default output format
-- `NODE_ENV`: Set to "production" for production deployment
+### GitHub Token Setup
 
-### Cross-Platform Support
+1. Go to [GitHub Settings > Personal Access Tokens](https://github.com/settings/tokens)
+2. Generate new token with `gist` scope
+3. Add to your environment:
+   ```bash
+   export GITHUB_TOKEN="your_token_here"
+   ```
 
-The `DEFAULT_AUTO_OPEN` feature works on all platforms:
+### Claude Desktop Configuration
 
-- **Windows**: Uses `start` command (primary) and `explorer` (fallback) - Windows 11 or later recommended
-- **macOS**: Uses `open` command (primary) and AppleScript (fallback) - macOS Sequoia 15 or later recommended
-- **Linux**: Uses `xdg-open` command
-
-**Note on Ubuntu/Linux Support**: While the auto-open functionality is implemented for Linux systems using `xdg-open`, we haven't conducted comprehensive testing on Ubuntu or other Linux distributions. The feature should work in GUI environments with properly configured default applications, but please use at your own discretion. If you successfully test this on Ubuntu or other Linux distributions, we would greatly appreciate your feedback and reports to help improve our documentation and support.
-
-### Path Configuration
-
-The configuration files include helpful setup notes. Key points:
-
-- Replace `/Users/username/` with your actual username
-- Replace project paths with your actual installation location
-- For Mac: Ensure `bun` is available in PATH (see setup instructions above)
-- For Windows: Update WSL paths if using claude-code integration
-
-**Mac: If bun command is not found by Claude Desktop:**
+**macOS:**
 ```bash
-$ BUN_PATH=$(which bun) && sudo ln -sf $BUN_PATH /usr/local/bin/bun
+code ~/Library/Application\ Support/Claude/claude_desktop_config.json
 ```
 
-**Find your Bun path:**
+**Windows:**
 ```bash
-$ which bun
-# Example output: /Users/username/.bun/bin/bun
+code %APPDATA%\Claude\claude_desktop_config.json
 ```
 
-**Find your project path:**
-```bash
-$ cd /path/to/unified-diff-mcp
-$ pwd
-# Example output: /Users/username/projects/unified-diff-mcp
-```
-
-### Development vs Production
-
-**Development (with hot reload):**
+**Configuration template:**
 ```json
 {
   "mcpServers": {
     "unified-diff-mcp": {
       "command": "bun",
-      "args": ["--watch", "/path/to/unified-diff-mcp/src/index.ts"]
+      "args": ["run", "/path/to/unified-diff-mcp/src/index.ts"],
+      "env": {
+        "GITHUB_TOKEN": "your_github_token_here",
+        "DEFAULT_AUTO_OPEN": "true",
+        "DEFAULT_OUTPUT_MODE": "html"
+      }
     }
   }
 }
 ```
 
-**Production (recommended):**
-Use the provided configuration files which include optimized settings for production use.
+## 📋 Parameters Reference
 
-## Advanced Usage
+### Common Parameters
 
-For detailed setup and usage instructions:
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `diff` | string | *(required)* | Unified diff text |
+| `format` | string | `side-by-side` | Display format (`line-by-line` or `side-by-side`) |
+| `showFileList` | boolean | `true` | Show file list summary |
+| `highlight` | boolean | `true` | Enable syntax highlighting |
+| `oldPath` | string | `file.txt` | Original file path |
+| `newPath` | string | `file.txt` | Modified file path |
+| `autoOpen` | boolean | `false` | Auto-open in browser |
 
-- **English**: [CLAUDE_CODE_INTEGRATION.md](CLAUDE_CODE_INTEGRATION.md)
-- **日本語**: [CLAUDE_CODE_INTEGRATION_JP.md](CLAUDE_CODE_INTEGRATION_JP.md)
+### GitHub Gist Specific
 
-## Supported Clients
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `expiryMinutes` | number | `30` | Auto-delete time (1-1440 minutes) |
+| `public` | boolean | `false` | Public vs secret gist |
 
-- **Claude Desktop** (Primary target)
-- **Claude Code** (Command-line integration)
+### Local File Specific
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `outputType` | string | `html` | Output format (`html` or `image`) |
+
+## 🌍 Platform Support
+
+| Platform | Auto-Open | Commands |
+|----------|-----------|----------|
+| **Windows** | ✅ | `start` (primary), `explorer` (fallback) |
+| **macOS** | ✅ | `open` (primary), AppleScript (fallback) |
+| **Linux** | ✅ | `xdg-open` |
+
+## 🔧 Development
+
+**Development mode (with hot reload):**
+```json
+{
+  "command": "bun",
+  "args": ["--watch", "/path/to/unified-diff-mcp/src/index.ts"]
+}
+```
+
+**Production mode:**
+```json
+{
+  "command": "bun",
+  "args": ["run", "/path/to/unified-diff-mcp/src/index.ts"]
+}
+```
+
+## 📚 Advanced Usage
+
+For detailed setup and integration guides:
+
+- 🇺🇸 **English**: [CLAUDE_CODE_INTEGRATION.md](CLAUDE_CODE_INTEGRATION.md)
+- 🇯🇵 **日本語**: [CLAUDE_CODE_INTEGRATION_JP.md](CLAUDE_CODE_INTEGRATION_JP.md)
+
+## 🤝 Supported Clients
+
+- **Claude Desktop** (Primary)
+- **Claude Code** (CLI)
 - **VS Code + MCP Extension**
-- **Cline** and other MCP-compatible clients
+- **Cline** and other MCP clients
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ### Dependencies
 
-This project uses the following open-source libraries:
+| Library | License | Purpose |
+|---------|---------|---------|
+| **diff2html** | MIT | HTML diff generation |
+| **playwright-core** | Apache 2.0 | Browser automation |
+| **@modelcontextprotocol/sdk** | MIT | MCP integration |
 
-- **diff2html** - MIT License - Pretty diff to HTML generator
-- **playwright-core** - Apache 2.0 License - Browser automation library  
-- **@modelcontextprotocol/sdk** - MIT License - Model Context Protocol SDK
+---
 
-All dependencies are compatible with commercial and non-commercial use.
+**Made with ❤️ for the Claude Desktop community**
