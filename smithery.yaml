@@ -10,7 +10,7 @@
 startCommand:
   type: stdio
   commandFunction: |-
-    (config) => ({command:'bun',args:['src/index.ts'],env:{NODE_ENV:'production',DEFAULT_AUTO_OPEN:config.defaultAutoOpen?.toString() || 'true',DEFAULT_OUTPUT_MODE:config.defaultOutputMode || 'html'}})
+    (config) => ({command:'bun',args:['dist/index.js'],env:{NODE_ENV:'production',DEFAULT_AUTO_OPEN:config.defaultAutoOpen?.toString() || 'true',DEFAULT_OUTPUT_MODE:config.defaultOutputMode || 'html'}})
   configSchema:
     # JSON Schema defining the configuration options for the MCP.
     type: object
