@@ -1,6 +1,6 @@
 {
   "name": "unified-diff-mcp",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Beautiful diff visualization for Claude Desktop - Remote MCP Server",
   "main": "workers-entry.js",
   "scripts": {
