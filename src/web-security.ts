@@ -43,27 +43,27 @@ export function getSecurityConfig(
   const configs = {
     low: {
       expiryMinutes: 60,
-      passwordProtected: false,
+      passwordProtected: false,  // パスワード保護を無効化
       publicGist: false,
       description: '🟢 Low Security - Secret Gist (60min auto-delete)'
     },
     medium: {
       expiryMinutes: 30,
-      passwordProtected: true,
+      passwordProtected: false,  // パスワード保護を無効化
       publicGist: false,
-      description: '🟡 Medium Security - Secret Gist + Password (30min auto-delete)'
+      description: '🟡 Medium Security - Secret Gist (30min auto-delete)'
     },
     high: {
       expiryMinutes: 15,
-      passwordProtected: true,
+      passwordProtected: false,  // パスワード保護を無効化
       publicGist: false,
-      description: '🔴 High Security - Secret Gist + Password (15min auto-delete)'
+      description: '🔴 High Security - Secret Gist (15min auto-delete)'
     }
   };
 
   const baseConfig = configs[securityLevel];
-  const accessCode = customOptions?.customAccessCode || 
-    (baseConfig.passwordProtected ? Math.random().toString(36).substring(2, 8) : undefined);
+  // パスワード保護が無効なのでアクセスコードも生成しない
+  const accessCode = undefined;
 
   return {
     ...baseConfig,
@@ -271,20 +271,19 @@ export function generateWebClaudeSecurityResponse(config: SecureGistConfig, gist
     60: '🟢'   // Low security
   }[config.expiryMinutes] || '🟡';
 
-  return `🌐 **Web版Claude対応 - セキュアdiff可視化**
+  return `🌐 **Web版Claude対応 - シンプルdiff可視化**
 
 ${securityEmoji} **セキュリティレベル**: ${config.description}
-📋 **プレビューリンク**: ${gistResult.htmlUrl}
-${accessCode ? `🔑 **アクセスコード**: \`${accessCode}\`` : ''}
 ⏰ **自動削除**: ${config.expiryMinutes}分後
 
-⚠️ **セキュリティ注意事項**:
-• Secret Gist - GitHub検索・プロフィールに非表示
-${config.passwordProtected ? '• パスワード保護 - アクセスコード必須' : '• URLを知っていれば誰でもアクセス可能'}
-• 短時間自動削除 - ${config.expiryMinutes}分で自動削除
-• 機密情報は含めないことを推奨
+🔗 **プレビューリンク**:
+${gistResult.htmlUrl}
 
-💡 **より高セキュリティが必要な場合**:
-• Claude Desktop版の利用を推奨
-• ローカルファイル出力機能を活用`;
+✅ **改善された体験**:
+• パスワード不要 - 即座アクセス可能
+• Secret Gist - GitHub検索・プロフィールに非表示
+• 短時間自動削除 - ${config.expiryMinutes}分で自動削除
+• 美しいスタイリングと高速読み込み
+
+💡 **使い方**: 上記リンクをクリックして即座表示！`;
 }

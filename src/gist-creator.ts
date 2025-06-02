@@ -10,6 +10,12 @@ import {
   generateWebClaudeSecurityResponse,
   type WebSecurityOptions 
 } from './web-security.js';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+// ディレクトリパス取得
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export interface GistOptions {
   outputFormat?: "line-by-line" | "side-by-side";
@@ -63,11 +69,14 @@ export async function createGitHubGist(
   
   // Web版Claudeモード（GitHubトークンなし）の場合
   if (webClaudeMode || !githubToken) {
-    return await createWebClaudeGist(diffText, {
+    console.error('🌐 Web版Claude mode detected - using secure local fallback');
+    return await createLocalFallbackHtmlAsGist(diffText, {
       ...options,
       securityLevel: securityLevel || 'medium'
     });
   }
+
+  console.error('🖥️ Desktop mode detected - using GitHub Gist');
 
   // 通常のGist作成（Desktop版Claude）
   return await createStandardGist(diffText, options, githubToken);
@@ -75,14 +84,106 @@ export async function createGitHubGist(
 
 /**
  * Web版Claude向けセキュアGist作成
+ * ローカルファイルを使用した代替方法を実装
  */
-async function createWebClaudeGist(
+async function createLocalFallbackHtmlAsGist(
   diffText: string,
   options: GistOptions
 ): Promise<GistResult> {
-  // この場合はローカル一時ファイル生成にフォールバック
-  // 本来はCloudflare Workers等にデプロイしてHTTP endpoint提供
-  throw new Error("Web版Claude mode requires deployment to cloud service (Cloudflare Workers/Vercel)");
+  const {
+    outputFormat = "side-by-side",
+    showFileList = true,
+    highlight = true,
+    oldPath = "file.txt",
+    newPath = "file.txt",
+    expiryMinutes = 30,
+    securityLevel = 'medium',
+    customAccessCode
+  } = options;
+
+  // セキュリティ設定取得
+  const securityConfig = getSecurityConfig(securityLevel, {
+    expiryMinutes,
+    customAccessCode
+  });
+
+  // ローカル一時ファイル生成
+  const fs = await import("fs/promises");
+  const os = await import("os");
+  const path = await import("path");
+
+  // HTML生成（シンプル版 - パスワード保護なし）
+  const htmlContent = generateDiffHtml(diffText, {
+    outputFormat,
+    showFileList,
+    highlight,
+    oldPath,
+    newPath,
+    isImageOutput: false,
+  });
+
+  // 一時ファイルに保存
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/[-T:]/g, "")
+    .slice(0, 14);
+  const tempFileName = `secure-diff-${timestamp}.html`;
+  
+  // プロジェクトの出力ディレクトリを使用（より見つけやすく）
+  const outputDir = join(__dirname, "..", "output");
+  try {
+    await fs.access(outputDir);
+  } catch {
+    await fs.mkdir(outputDir, { recursive: true });
+    console.error(`📁 Created output directory: ${outputDir}`);
+  }
+  
+  const tempFilePath = join(outputDir, tempFileName);
+  await fs.writeFile(tempFilePath, htmlContent, "utf8");
+  
+  // ファイルのアクセス権限を確認
+  try {
+    await fs.access(tempFilePath, fs.constants.R_OK);
+    console.error(`✅ File created successfully: ${tempFilePath}`);
+  } catch (accessError) {
+    console.error(`⚠️ File access issue: ${accessError}`);
+  }
+
+  // 有効期限タイマー（ファイル削除用）
+  setTimeout(async () => {
+    try {
+      await fs.unlink(tempFilePath);
+      console.error(`🗑️ Temporary file ${tempFilePath} deleted successfully`);
+    } catch (error) {
+      console.error(`🗑️ Failed to delete temporary file ${tempFilePath}:`, error);
+    }
+  }, securityConfig.expiryMinutes * 60 * 1000);
+
+  // ファイルURLの作成
+  const fileUrl = `file://${tempFilePath}`;
+  const expiresAt = new Date(Date.now() + securityConfig.expiryMinutes * 60 * 1000);
+  
+  // メッセージ生成（GitHub Gistと同じインターフェース）
+  const gistUrlInfo = {
+    htmlUrl: fileUrl,
+    gistUrl: fileUrl,
+    editUrl: fileUrl
+  };
+  
+  const message = generateWebClaudeSecurityResponse(securityConfig, gistUrlInfo, securityConfig.accessCode);
+
+  return {
+    success: true,
+    htmlUrl: fileUrl,
+    rawUrl: fileUrl,
+    gistUrl: fileUrl,
+    editUrl: fileUrl,
+    gistId: `local-${timestamp}`,
+    expiresAt,
+    message,
+    accessCode: securityConfig.accessCode,
+    securityInfo: securityConfig.description
+  };
 }
 
 /**
@@ -114,43 +215,28 @@ async function createStandardGist(
     customAccessCode
   });
 
-  // HTML生成（パスワード保護の場合）
-  let htmlContent: string;
-  if (securityConfig.passwordProtected && securityConfig.accessCode) {
-    htmlContent = generatePasswordProtectedHTML(
-      diffText,
-      securityConfig.accessCode,
-      {
-        outputFormat,
-        showFileList,
-        highlight,
-        oldPath,
-        newPath,
-        expiryMinutes: securityConfig.expiryMinutes
-      }
-    );
-  } else {
-    const baseHtml = generateDiffHtml(diffText, {
-      outputFormat,
-      showFileList,
-      highlight,
-      oldPath,
-      newPath,
-      isImageOutput: false,
-    });
+  // HTML生成（シンプル版）
+  const baseHtml = generateDiffHtml(diffText, {
+    outputFormat,
+    showFileList,
+    highlight,
+    oldPath,
+    newPath,
+    isImageOutput: false,
+  });
 
-    // 有効期限通知を追加
-    htmlContent = baseHtml
-      .replace(
-        "<body>",
-        `<body>
-    <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;">
+  // 有効期限通知を追加（シンプル版）
+  const htmlContent = baseHtml
+    .replace(
+      "<body>",
+      `<body>
+    <div style="background: #e3f2fd; border: 1px solid #2196f3; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;">
         <span id="expiry-notice">⏰ This page will auto-delete in ${securityConfig.expiryMinutes} minutes</span>
     </div>`
-      )
-      .replace(
-        "</body>",
-        `
+    )
+    .replace(
+      "</body>",
+      `
     <script>
         // Countdown timer
         const expiryTime = Date.now() + ${securityConfig.expiryMinutes * 60 * 1000};
@@ -164,16 +250,12 @@ async function createStandardGist(
                     ? \`⏰ This page will auto-delete in \${minutes}:\${seconds.toString().padStart(2, '0')}\`
                     : '🗑️ This content has expired';
             }
-            if (remaining <= 0) {
-                document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: -apple-system, BlinkMacSystemFont, \\'Segoe UI\\', Helvetica, Arial, sans-serif;"><h1>🗑️ This content has expired</h1><p>This temporary diff visualization has been automatically removed.</p></div>';
-            }
         };
         setInterval(updateCountdown, 1000);
         updateCountdown();
     </script>
 </body>`
-      );
-  }
+    );
 
   // Gist作成
   const gistData = {
@@ -282,31 +364,15 @@ export async function createLocalFallbackHtml(
     customAccessCode
   });
 
-  // HTML生成
-  let htmlContent: string;
-  if (securityConfig.passwordProtected && securityConfig.accessCode) {
-    htmlContent = generatePasswordProtectedHTML(
-      diffText,
-      securityConfig.accessCode,
-      {
-        outputFormat,
-        showFileList,
-        highlight,
-        oldPath,
-        newPath,
-        expiryMinutes: securityConfig.expiryMinutes
-      }
-    );
-  } else {
-    htmlContent = generateDiffHtml(diffText, {
-      outputFormat,
-      showFileList,
-      highlight,
-      oldPath,
-      newPath,
-      isImageOutput: false,
-    });
-  }
+  // HTML生成（シンプル版）
+  const htmlContent = generateDiffHtml(diffText, {
+    outputFormat,
+    showFileList,
+    highlight,
+    oldPath,
+    newPath,
+    isImageOutput: false,
+  });
 
   // 一時ファイルに保存
   const timestamp = new Date()
@@ -314,17 +380,36 @@ export async function createLocalFallbackHtml(
     .replace(/[-T:]/g, "")
     .slice(0, 14);
   const tempFileName = `secure-diff-${timestamp}.html`;
-  const tempFilePath = path.join(os.tmpdir(), tempFileName);
-
+  
+  // プロジェクトの出力ディレクトリを使用（より見つけやすく）
+  const outputDir = join(__dirname, "..", "output");
+  try {
+    await fs.access(outputDir);
+  } catch {
+    await fs.mkdir(outputDir, { recursive: true });
+  }
+  
+  const tempFilePath = join(outputDir, tempFileName);
   await fs.writeFile(tempFilePath, htmlContent, "utf8");
 
-  const message = `⚠️ **GitHub token not available - Local fallback mode**
+  // 有効期限タイマー（ファイル削除用）
+  setTimeout(async () => {
+    try {
+      await fs.unlink(tempFilePath);
+      console.error(`🗑️ Temporary file ${tempFilePath} deleted successfully`);
+    } catch (error) {
+      console.error(`🗑️ Failed to delete temporary file ${tempFilePath}:`, error);
+    }
+  }, (securityConfig.expiryMinutes || 30) * 60 * 1000);
 
-🔒 **Security Level**: ${securityConfig.description}
-📁 **Local file**: ${tempFilePath}
-${securityConfig.accessCode ? `🔑 **Access code**: \`${securityConfig.accessCode}\`` : ''}
+  const message = `🌐 **GitHub token not available - Local fallback mode**
 
-💡 **For Web版Claude support**: Deploy to Cloudflare Workers or Vercel
+📱 **シンプルアクセス**: ${securityConfig.description}
+
+🔗 **Local file**:
+file://${tempFilePath}
+
+💡 **使い方**: 上記リンクをクリックしてブラウザで開く！
 🖥️ **For full features**: Use Claude Desktop with GITHUB_TOKEN`;
 
   return {

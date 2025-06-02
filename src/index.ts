@@ -26,7 +26,7 @@ const DEFAULT_OUTPUT_MODE =
 const server = new Server(
   {
     name: "unified-diff-mcp",
-    version: "1.1.0", // Updated for Web版Claude support
+    version: "1.1.1", // Updated for Claude Code integration
   },
   {
     capabilities: {
@@ -34,6 +34,44 @@ const server = new Server(
     },
   }
 );
+
+/**
+ * クロードコードのedit_file dryRun出力を処理する関数
+ * dryRun出力から差分テキストを抽出する
+ */
+function processDryRunOutput(input: string): string {
+  // クロードコードのdryRun出力形式をチェック
+  if (!input) return '';
+  
+  // JSONフォーマットのdryRun出力をパースしてみる
+  try {
+    const jsonResult = JSON.parse(input);
+    
+    // JSONには通常diffプロパティが含まれる
+    if (jsonResult.diff) {
+      return jsonResult.diff;
+    }
+    
+    // 詳細なdiff情報がある場合（formattedDiffなど）
+    if (jsonResult.formattedDiff) {
+      return jsonResult.formattedDiff;
+    }
+    
+    // その他の可能性を確認
+    if (typeof jsonResult === 'string' && jsonResult.includes('---') && jsonResult.includes('+++')) {
+      return jsonResult;
+    }
+  } catch (e) {
+    // JSONでない場合は通常のテキスト差分と判断
+    // diffフォーマットのヘッダーを確認
+    if (input.includes('---') && input.includes('+++')) {
+      return input;
+    }
+  }
+  
+  // 差分形式でなければそのまま返す
+  return input;
+}
 
 /**
  * Generate diff visualization and save to output directory
@@ -60,8 +98,11 @@ async function generateDiffVisualization(
     outputType = DEFAULT_OUTPUT_MODE,
   } = options;
 
+  // Process dry run output if necessary
+  const processedDiff = processDryRunOutput(diffText);
+
   // Generate HTML first
-  const html = generateDiffHtml(diffText, {
+  const html = generateDiffHtml(processedDiff, {
     outputFormat,
     showFileList,
     highlight,
@@ -73,20 +114,45 @@ async function generateDiffVisualization(
   // Generate filename (always the same, overwriting previous files)
   const extension = outputType === "html" ? "html" : "png";
   const filename = `diff-image.${extension}`;
-  const filePath = join(__dirname, "..", "output", filename);
+  
+  // Cloud環境（Smithly）でのパス処理
+  const fs = await import("fs/promises");
+  const path = await import("path");
+  
+  // クラウド環境とローカル環境の判定
+  const isCloudEnvironment = process.cwd().startsWith('/app') || process.env.SMITHLY_CLOUD === 'true';
+  
+  let outputDir: string;
+  let filePath: string;
+  
+  if (isCloudEnvironment) {
+    // クラウド環境（Smithly）の場合
+    console.error('☁️ Cloud environment (Smithly) detected');
+    outputDir = '/app/output';
+    filePath = path.join(outputDir, filename);
+    
+    console.error(`📁 Cloud output dir: ${outputDir}`);
+    console.error(`📄 Cloud file path: ${filePath}`);
+  } else {
+    // ローカル環境の場合
+    console.error('🖥️ Local environment detected');
+    outputDir = path.join(process.cwd(), "output");
+    filePath = path.join(outputDir, filename);
+  }
 
   // Ensure output directory exists
-  const fs = await import("fs/promises");
-  const outputDir = join(__dirname, "..", "output");
   try {
     await fs.access(outputDir);
+    console.error(`✅ Output directory exists: ${outputDir}`);
   } catch {
     await fs.mkdir(outputDir, { recursive: true });
+    console.error(`📁 Created output directory: ${outputDir}`);
   }
 
   if (outputType === "html") {
     // Save HTML file
     await fs.writeFile(filePath, html, "utf8");
+    console.error(`✅ HTML file saved: ${filePath}`);
   } else {
     // Generate PNG image
     const browser = await chromium.launch();
@@ -102,58 +168,71 @@ async function generateDiffVisualization(
     });
 
     await browser.close();
+    console.error(`✅ PNG image saved: ${filePath}`);
   }
 
-  // Auto-open if requested
-  if (autoOpen) {
-    try {
-      const { exec } = await import("child_process");
-      const { promisify } = await import("util");
-      const execAsync = promisify(exec);
+  // Auto-open if requested (クラウド環境では無効)
+  // isCloudEnvironment already declared above, reuse it
+  
+  if (autoOpen && !isCloudEnvironment) {
+    // ローカル環境でのautoOpen処理
+    console.error('🖥️ Local environment: Processing autoOpen request');
+  try {
+  const { exec } = await import("child_process");
+  const { promisify } = await import("util");
+  const execAsync = promisify(exec);
 
-      const timestamp = new Date()
-        .toISOString()
-        .replace(/[-T:]/g, "")
-        .slice(0, 14);
-      const openUrl =
-        outputType === "html" ? `file://${filePath}?t=${timestamp}` : filePath;
+  const targetPath = path.resolve(filePath);
+  
+  const timestamp = new Date()
+  .toISOString()
+            .replace(/[-T:]/g, "")
+    .slice(0, 14);
+          const openUrl = outputType === "html" ? `file://${targetPath}?t=${timestamp}` : targetPath;
 
-      console.error(`Attempting to open ${outputType}: ${openUrl}`);
+  console.error(`Attempting to open ${outputType}: ${openUrl}`);
 
-      const platform = process.platform;
-      let command: string;
+  const platform = process.platform;
+  let command: string;
 
-      if (platform === "win32") {
-        command = `start "" "${filePath}"`;
-      } else if (platform === "darwin") {
-        command =
-          outputType === "html" ? `open "${openUrl}"` : `open "${filePath}"`;
-      } else {
-        command = `xdg-open "${filePath}"`;
-      }
+  if (platform === "win32") {
+    command = `start "" "${targetPath}"`;
+  } else if (platform === "darwin") {
+            command = `open "${targetPath}"`;
+  } else {
+      command = `xdg-open "${targetPath}"`;
+  }
 
-      await execAsync(command);
-      console.error(`Successfully opened ${outputType}: ${filePath}`);
-    } catch (error) {
-      console.error(`Auto-open failed: ${error}`);
-      // Fallback handling
-      try {
-        const { exec } = await import("child_process");
-        const platform = process.platform;
+  const result = await execAsync(command);
+  console.error(`Successfully opened ${outputType}: ${targetPath}`);
+  
+          await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  } catch (error) {
+  console.error(`Auto-open failed: ${error}`);
+  try {
+  const { spawn } = await import("child_process");
+  const fallbackPath = path.resolve(filePath);
+    const platform = process.platform;
 
-        if (platform === "win32") {
-          exec(`explorer "${filePath}"`);
-        } else if (platform === "darwin") {
-          exec(
-            `osascript -e 'tell application "Finder" to open POSIX file "${filePath}"'`
-          );
-        } else {
-          exec(`xdg-open "${filePath}"`);
+    if (platform === "win32") {
+          spawn('cmd', ['/c', 'start', '', fallbackPath], { detached: true, stdio: 'ignore' });
+            } else if (platform === "darwin") {
+              spawn('open', [fallbackPath], { detached: true, stdio: 'ignore' });
+            } else {
+              try {
+                spawn('xdg-open', [fallbackPath], { detached: true, stdio: 'ignore' });
+              } catch (xdgError) {
+                spawn('firefox', [fallbackPath], { detached: true, stdio: 'ignore' });
+              }
+            }
+            console.error(`Fallback auto-open attempted for: ${fallbackPath}`);
+          } catch (fallbackError) {
+            console.error(`Fallback auto-open also failed: ${fallbackError}`);
+          }
         }
-      } catch (fallbackError) {
-        console.error(`Fallback auto-open also failed: ${fallbackError}`);
-      }
-    }
+  } else if (autoOpen && isCloudEnvironment) {
+    console.error('☁️ Cloud environment: autoOpen not supported, content will be returned as data URI');
   }
 
   return filePath;
@@ -335,8 +414,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         );
       }
 
+      // Process dry run output if necessary
+      const processedDiff = processDryRunOutput(diff);
+
       try {
-        const result = await createGitHubGist(diff, {
+        const result = await createGitHubGist(processedDiff, {
           outputFormat: format,
           showFileList,
           highlight,
@@ -397,13 +479,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ],
         };
       } catch (error) {
+        console.error(`🚨 Primary GitHub Gist creation failed: ${error}`);
+        
         // Fallback for Web版Claude or when GitHub token is not available
         if (
           error instanceof Error && 
-          (error.message.includes("GITHUB_TOKEN") || webClaudeMode)
+          (error.message.includes("GITHUB_TOKEN") || error.message.includes("token") || webClaudeMode)
         ) {
+          console.error('🔄 Switching to secure local fallback mode...');
           try {
-            const fallbackResult = await createLocalFallbackHtml(diff, {
+            const fallbackResult = await createLocalFallbackHtml(processedDiff, {
               outputFormat: format,
               showFileList,
               highlight,
@@ -514,16 +599,58 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         outputType,
       });
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Generated diff ${outputType}: ${filePath}${
-              autoOpen ? " (opened automatically)" : ""
-            }`,
-          },
-        ],
-      };
+      // クラウド環境でのレスポンス処理
+      const path = await import("path");
+      const isCloudEnvironment = process.cwd().startsWith('/app') || process.env.SMITHLY_CLOUD === 'true';
+      
+      if (isCloudEnvironment) {
+        // クラウド環境: HTMLコンテンツを直接返す
+        console.error('☁️ Cloud environment: Returning HTML content directly');
+        
+        // ファイルからHTMLコンテンツを読み取り
+        const fs = await import("fs/promises");
+        let htmlContent: string;
+        try {
+          htmlContent = await fs.readFile(filePath, 'utf8');
+        } catch (error) {
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Failed to read generated file: ${error}`
+          );
+        }
+        
+        // data URIとして埋め込み
+        const dataUri = `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`;
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `✅ **Diff ${outputType} generated successfully!**\n\n🌐 **Cloud Environment**: Smithly Docker container\n\n🔗 **Diff Visualization**:\n${dataUri}\n\n${
+                autoOpen ? "🌐 **Status**: Content ready for viewing" : "📝 **Status**: Ready for manual opening"
+              }\n\n🛠️ **Features**: Beautiful styling, responsive design, syntax highlighting\n🖥️ **Compatibility**: Works in all modern browsers\n\n💡 **使い方**: 上記リンクをクリックしてブラウザで表示！`,
+            },
+          ],
+        };
+      } else {
+        // ローカル環境: ファイルURLを返す
+        const finalPath = path.resolve(filePath);
+        const fileUrl = `file://${finalPath}`;
+        
+        console.error(`🔗 Local file path: ${finalPath}`);
+        console.error(`🌐 File URL: ${fileUrl}`);
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `✅ **Diff ${outputType} generated successfully!**\n\n🔗 **File Location**:\n${fileUrl}\n\n${
+                autoOpen ? "🌐 **Status**: Opened automatically in default application" : "📝 **Status**: Ready for manual opening"
+              }\n\n🛠️ **Features**: Beautiful styling, responsive design, syntax highlighting\n🖥️ **Compatibility**: Works on all major operating systems\n\n💡 **使い方**: 上記リンクをクリックしてブラウザで開く！`,
+            },
+          ],
+        };
+      }
     }
 
     throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
@@ -542,8 +669,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Unified Diff MCP Server v1.1.0 running on stdio");
+  console.error("Unified Diff MCP Server v1.1.1 running on stdio");
   console.error("🌐 Web版Claude support enabled with enhanced security");
+  console.error("💻 Claude Code integration added with edit_file dryRun support");
 }
 
 if (process.argv[1] === __filename) {

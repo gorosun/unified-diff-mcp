@@ -1,70 +1,46 @@
 {
   "name": "unified-diff-mcp",
-  "version": "1.0.0",
-  "description": "MCP server for visualizing unified diffs with diff2html - Beautiful HTML/PNG diff generation for Claude Desktop",
-  "type": "module",
-  "main": "dist/index.js",
-  "bin": {
-    "unified-diff-mcp": "./dist/index.js"
-  },
-  "files": [
-    "dist/",
-    "examples/",
-    "README.md",
-    "LICENSE"
-  ],
+  "version": "1.1.0",
+  "description": "Beautiful diff visualization for Claude Desktop - Remote MCP Server",
+  "main": "workers-entry.js",
   "scripts": {
-    "build": "/Users/gorosun/.bun/bin/bun build src/index.ts --outfile dist/index.js --target node --minify",
-    "build:node": "tsc",
-    "dev": "/Users/gorosun/.bun/bin/bun --watch src/index.ts",
-    "start": "node dist/index.js",
-    "start:bun": "/Users/gorosun/.bun/bin/bun dist/index.js",
-    "start:dev": "/Users/gorosun/.bun/bin/bun src/index.ts",
-    "__prepublishOnly": "/Users/gorosun/.bun/bin/bun run build",
-    "test": "/Users/gorosun/.bun/bin/bun test-sample.js",
-    "test:sample": "/Users/gorosun/.bun/bin/bun test-sample.js || /Users/gorosun/.bun/bin/bun test-sample.js",
-    "test:build": "npm run build && npm run start"
+    "start": "bun run src/index.ts",
+    "dev": "wrangler dev --local",
+    "workers:dev": "wrangler dev",
+    "workers:deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "test": "bun test",
+    "test:fix": "bun run test-fix.js",
+    "build": "bun run build:workers",
+    "build:workers": "echo 'No build step required for Workers'",
+    "lint": "eslint *.js *.ts src/**/*.ts",
+    "format": "prettier --write *.js *.ts src/**/*.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "playwright-core": "^1.40.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241218.0",
+    "@types/node": "^20.0.0",
+    "wrangler": "^3.87.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.0.0"
   },
   "keywords": [
     "mcp",
-    "model-context-protocol",
+    "claude",
     "diff",
     "visualization",
-    "unified-diff",
-    "diff2html",
-    "claude-desktop",
-    "anthropic",
-    "bun",
-    "typescript",
-    "diff-viewer",
-    "code-review"
+    "cloudflare-workers",
+    "remote-mcp"
   ],
-  "author": {
-    "name": "Goro Hayakawa",
-    "email": "goro-hayakawa@no-studio.net",
-    "url": "https://github.com/gorosun"
-  },
+  "author": "gorosun",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/gorosun/unified-diff-mcp.git"
-  },
-  "bugs": {
-    "url": "https://github.com/gorosun/unified-diff-mcp/issues"
-  },
-  "homepage": "https://github.com/gorosun/unified-diff-mcp#readme",
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.5.0",
-    "diff2html": "^3.4.51",
-    "playwright-core": "^1.52.0"
-  },
-  "devDependencies": {
-    "@types/bun": "^1.2.14",
-    "@types/node": "^20.10.0",
-    "tsx": "^4.19.4",
-    "typescript": "^5.3.0"
   }
 }
