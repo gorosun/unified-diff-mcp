@@ -7,8 +7,8 @@ COPY tsconfig.json ./
 COPY src ./src
 # Install dependencies and build
 RUN bun install --frozen-lockfile
-# Build TypeScript to JavaScript directly with bun
-RUN bun build src/index.ts --outfile dist/index.js --target node --minify
+# Build TypeScript to JavaScript with proper externals to avoid playwright issues
+RUN bun build src/index.ts --outfile dist/index.js --target node --minify --external playwright-core --external chromium-bidi --external electron
 
 # Runtime stage
 FROM oven/bun:1-alpine

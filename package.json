@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "playwright-core": "^1.40.0"
+    "playwright-core": "^1.40.0",
+    "diff2html": "^3.4.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241218.0",
