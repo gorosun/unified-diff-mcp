@@ -134,9 +134,9 @@ async function generateDiffVisualization(
     console.error(`📁 Cloud output dir: ${outputDir}`);
     console.error(`📄 Cloud file path: ${filePath}`);
   } else {
-    // ローカル環境の場合
+    // ローカル環境の場合 - プロジェクトディレクトリのoutputフォルダを使用
     console.error('🖥️ Local environment detected');
-    outputDir = path.join(process.cwd(), "output");
+    outputDir = path.join(__dirname, "..", "output");
     filePath = path.join(outputDir, filename);
   }
 
